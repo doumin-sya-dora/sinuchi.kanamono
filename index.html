@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>金物配置ツール</title>
+<title>金物配置ツール 完全版</title>
 <style>
   :root {
     --bg: #f3f3f3;
@@ -124,6 +124,7 @@
   .field-md { width: 130px; }
   .field-lg { width: 200px; }
   .field-xl { width: 260px; }
+  .field-full { width: 100%; }
 
   .label {
     font-size: 12px;
@@ -245,6 +246,13 @@
     z-index: 200;
   }
 
+  .subgrid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
   .result-box {
     background: var(--result-bg);
     border: 2px solid var(--result-border);
@@ -256,11 +264,72 @@
     font-weight: 600;
   }
 
-  .subgrid {
+  .manage-list {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
+    gap: 10px;
+  }
+
+  .item-card {
+    background:#fff;
+    border:1px solid #ddd;
+    border-radius:12px;
+    padding:10px;
+  }
+
+  .item-title {
+    font-size:14px;
+    font-weight:700;
+    margin-bottom:8px;
+  }
+
+  .item-meta {
+    font-size:13px;
+    color:#555;
+    line-height:1.5;
+    margin-bottom:8px;
+  }
+
+  .item-actions {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+
+  .badge-default {
+    display:inline-block;
+    margin-left:6px;
+    padding:2px 8px;
+    border-radius:999px;
+    background:#f0f0f0;
+    font-size:11px;
+    color:#666;
+    vertical-align:middle;
+  }
+
+  details.manage-section {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 14px;
+    box-shadow: var(--shadow);
     margin-bottom: 12px;
+    overflow: hidden;
+  }
+
+  details.manage-section summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 12px 10px;
+    font-size: 14px;
+    font-weight: 700;
+    background: #fafafa;
+    border-bottom: 1px solid #eee;
+  }
+
+  details.manage-section summary::-webkit-details-marker { display:none; }
+  details.manage-section[open] summary { background:#f3f3f3; }
+
+  .manage-section-body {
+    padding: 10px;
   }
 
   .mini-note {
@@ -281,7 +350,7 @@
 <body>
 <div class="app">
 
-  <h1>金物配置ツール</h1>
+  <h1>金物配置ツール 完全版</h1>
 
   <div class="card top-result">
     <div class="top-result-title">主要結果</div>
@@ -382,6 +451,24 @@
 
   <div class="subgrid">
     <div class="card">
+      <div class="section-title">金物選択</div>
+      <div class="row-flex">
+        <div class="field-lg">
+          <div class="label">丁番種類</div>
+          <select id="hingeSelect"></select>
+        </div>
+        <div class="field-lg">
+          <div class="label">ストライク種類</div>
+          <select id="strikeSelect"></select>
+        </div>
+        <div class="field-lg">
+          <div class="label">フランス落とし種類</div>
+          <select id="flushSelect"></select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
       <div class="section-title">基準入力</div>
       <div class="row-flex">
         <div class="field-md">
@@ -401,10 +488,6 @@
           <input id="frameThickness" inputmode="decimal">
         </div>
         <div class="field-md">
-          <div class="label">丁番寸法</div>
-          <input id="hingeValueInput" inputmode="decimal">
-        </div>
-        <div class="field-md">
           <div class="label">丁番枚数</div>
           <input id="hingeCount" inputmode="numeric">
         </div>
@@ -412,31 +495,146 @@
     </div>
 
     <div class="card">
-      <div class="section-title">ストライク入力</div>
+      <div class="section-title">現在値</div>
       <div class="row-flex">
         <div class="field-md">
-          <div class="label">下端</div>
-          <input id="strikeOffsetInput" inputmode="decimal">
+          <div class="label">丁番寸法</div>
+          <input id="hingeValueView" readonly>
         </div>
         <div class="field-md">
-          <div class="label">高さ</div>
-          <input id="strikeHeightInput" inputmode="decimal">
+          <div class="label">ストライク下端</div>
+          <input id="strikeOffsetView" readonly>
         </div>
         <div class="field-md">
-          <div class="label">厚み</div>
-          <input id="strikeThicknessInput" inputmode="decimal">
+          <div class="label">ストライク高さ</div>
+          <input id="strikeHeightView" readonly>
+        </div>
+        <div class="field-md">
+          <div class="label">ストライク厚み</div>
+          <input id="strikeThicknessView" readonly>
+        </div>
+        <div class="field-md">
+          <div class="label">フランス寸法</div>
+          <input id="flushValueView" readonly>
         </div>
       </div>
     </div>
+  </div>
 
+  <div class="subgrid">
     <div class="card">
-      <div class="section-title">フランス落とし入力</div>
+      <div class="section-title">丁番追加</div>
       <div class="row-flex">
+        <div class="field-lg">
+          <div class="label">名前</div>
+          <input id="newHingeName">
+        </div>
         <div class="field-md">
-          <div class="label">金物寸法</div>
-          <input id="flushValueInput" inputmode="decimal">
+          <div class="label">値</div>
+          <input id="newHingeValue" inputmode="decimal">
+        </div>
+        <div class="field-md">
+          <button type="button" id="addHingeBtn" class="btn-add">＋ 追加</button>
         </div>
       </div>
+      <div id="hingeMessage" class="message"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">ストライク追加</div>
+      <div class="row-flex">
+        <div class="field-lg">
+          <div class="label">名前</div>
+          <input id="newStrikeName">
+        </div>
+        <div class="field-md">
+          <div class="label">下端</div>
+          <input id="newStrikeOffset" inputmode="decimal">
+        </div>
+        <div class="field-md">
+          <div class="label">高さ</div>
+          <input id="newStrikeHeight" inputmode="decimal">
+        </div>
+        <div class="field-md">
+          <div class="label">厚み</div>
+          <input id="newStrikeThickness" inputmode="decimal">
+        </div>
+        <div class="field-md">
+          <button type="button" id="addStrikeBtn" class="btn-add">＋ 追加</button>
+        </div>
+      </div>
+      <div id="strikeMessage" class="message"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">フランス落とし追加</div>
+      <div class="row-flex">
+        <div class="field-lg">
+          <div class="label">名前</div>
+          <input id="newFlushName">
+        </div>
+        <div class="field-md">
+          <div class="label">値</div>
+          <input id="newFlushValue" inputmode="decimal">
+        </div>
+        <div class="field-md">
+          <button type="button" id="addFlushBtn" class="btn-add">＋ 追加</button>
+        </div>
+      </div>
+      <div id="flushMessage" class="message"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">金物管理</div>
+
+    <details class="manage-section" open>
+      <summary><span id="hingeSummaryText">丁番一覧（0件）</span></summary>
+      <div class="manage-section-body"><div id="hingeList" class="manage-list"></div></div>
+    </details>
+
+    <details class="manage-section">
+      <summary><span id="strikeSummaryText">ストライク一覧（0件）</span></summary>
+      <div class="manage-section-body"><div id="strikeList" class="manage-list"></div></div>
+    </details>
+
+    <details class="manage-section">
+      <summary><span id="flushSummaryText">フランス落とし一覧（0件）</span></summary>
+      <div class="manage-section-body"><div id="flushList" class="manage-list"></div></div>
+    </details>
+
+    <div class="card" style="margin-top:10px;">
+      <div class="section-title">編集フォーム</div>
+      <div class="small">ストライクの値2は「高さ,厚み」の形で入力します。例: 110,2.5</div>
+      <div class="row-flex">
+        <div class="field-md">
+          <div class="label">種類</div>
+          <select id="manageType">
+            <option value="hinge">丁番</option>
+            <option value="strike">ストライク</option>
+            <option value="flush">フランス落とし</option>
+          </select>
+        </div>
+        <div class="field-lg">
+          <div class="label">名前</div>
+          <input id="manageName">
+        </div>
+        <div class="field-md">
+          <div class="label">値1</div>
+          <input id="manageValue1" inputmode="decimal">
+        </div>
+        <div class="field-md">
+          <div class="label">値2</div>
+          <input id="manageValue2">
+        </div>
+        <div class="field-md">
+          <button type="button" id="manageSaveBtn" class="btn-edit">更新</button>
+        </div>
+        <div class="field-md">
+          <button type="button" id="manageCancelBtn" class="btn-delete">解除</button>
+        </div>
+      </div>
+      <div id="manageMessage" class="message"></div>
     </div>
   </div>
 
