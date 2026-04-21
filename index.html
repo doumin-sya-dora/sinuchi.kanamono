@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>金物図面連動計算</title>
+<style>
+  :root {
+    --bg: #f3f3f3;
+    --card: #ffffff;
+    --border: #d8d8d8;
+    --text: #222;
+    --sub: #666;
+    --blue: #1698f3;
+    --radius: 14px;
+    --shadow: 0 1px 4px rgba(0,0,0,.06);
+    --result-bg: #fff9df;
+    --result-border: #e0b63f;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
+    padding: 10px;
+  }
+
+  .app {
+    max-width: 980px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    margin: 4px 0 10px;
+    text-align: center;
+    font-size: 20px;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+
+  .top-result {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: rgba(255,255,255,.95);
+    backdrop-filter: blur(8px);
+  }
+
+  .top-result-title {
+    font-size: 12px;
+    color: var(--sub);
+    margin-bottom: 4px;
+  }
+
+  .top-result-value {
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.5;
+  }
+
+  .diagram-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    position: sticky;
+    top: 72px;
+    z-index: 35;
+    background: var(--bg);
+    padding-bottom: 8px;
+  }
+
+  .tab-btn {
+    min-height: 42px;
+    border: 1px solid #cfcfcf;
+    border-radius: 12px;
+    background: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .tab-btn.active {
+    background: #222;
+    color: #fff;
+    border-color: #222;
+  }
+
+  .diagram-panel { display: none; }
+  .diagram-panel.active { display: block; }
+
+  .diagram-stage {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    border-radius: 12px;
+    background: #fff;
+  }
+
+  .diagram-canvas {
+    position: relative;
+    transform-origin: top left;
+  }
+
+  .diagram-canvas img {
+    display: block;
+    position: absolute;
+    inset: 0;
+    user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: none;
+  }
+
+  .overlay-input {
+    position: absolute;
+    border: 2px solid var(--blue);
+    border-radius: 4px;
+    background: rgba(255,255,255,.96);
+    text-align: center;
+    font-size: 16px;
+    color: #222;
+    padding: 0 4px;
+    outline: none;
+  }
+
+  .overlay-input:focus {
+    box-shadow: 0 0 0 3px rgba(22,152,243,.18);
+  }
+
+  .overlay-label {
+    position: absolute;
+    font-size: 11px;
+    font-weight: 700;
+    color: #222;
+    background: rgba(255,255,255,.82);
+    padding: 1px 4px;
+    border-radius: 6px;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  .section-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  .small {
+    font-size: 12px;
+    color: var(--sub);
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+
+  .row-flex {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 6px;
+    align-items: end;
+  }
+
+  .field-sm { width: 82px; }
+  .field-md { width: 92px; }
+  .field-lg { width: 176px; }
+  .symbol {
+    width: 14px;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    font-weight: 700;
+    color: #555;
+  }
+  .break { flex-basis: 100%; height: 0; }
+
+  .label {
+    font-size: 12px;
+    margin-bottom: 4px;
+    color: #444;
+    padding-left: 2px;
+  }
+
+  input, select, button {
+    width: 100%;
+    min-height: 40px;
+    border-radius: 10px;
+    border: 1px solid #c9c9c9;
+    font-size: 16px;
+    padding: 6px 8px;
+    background: #fff;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  input[readonly] {
+    background: #f5f5f5;
+  }
+
+  button {
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  button:active { transform: scale(.98); }
+  button:disabled { opacity: .45; cursor: default; transform: none; }
+
+  .frame   { background: #dce9f5; }
+  .gap     { background: #dfeadf; }
+  .door    { background: #efe3cd; }
+  .hinge   { background: #f6e3e6; }
+  .strike  { background: #ede7f6; }
+  .flush   { background: #fff8d6; }
+  .total   { background: #f1f1f1; }
+
+  .subgrid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .result-box {
+    background: var(--result-bg);
+    border: 2px solid var(--result-border);
+    border-radius: 16px;
+    padding: 16px;
+    line-height: 1.7;
+    white-space: pre-line;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .message {
+    margin-top: 8px;
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 12px;
+    text-align: center;
+    display: none;
+  }
+  .message.ok { background:#e8f5e9; }
+  .message.warn { background:#fff3e0; }
+  .message.info { background:#e3f2fd; }
+
+  .btn-add { background: #f5fff5; }
+  .btn-delete { background: #fff7f7; }
+  .btn-edit { background: #f4f8ff; }
+
+  details.manage-section {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  details.manage-section summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 12px 10px;
+    font-size: 14px;
+    font-weight: 700;
+    background: #fafafa;
+    border-bottom: 1px solid #eee;
+  }
+  details.manage-section summary::-webkit-details-marker { display:none; }
+  details.manage-section[open] summary { background:#f3f3f3; }
+  .manage-section-body { padding: 10px; }
+
+  .manage-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .item-card {
+    background:#fff;
+    border:1px solid #ddd;
+    border-radius:12px;
+    padding:10px;
+  }
+
+  .item-title { font-size:14px; font-weight:700; margin-bottom:8px; }
+  .item-meta { font-size:13px; color:#555; line-height:1.5; margin-bottom:8px; }
+  .item-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .badge-default {
+    display:inline-block;
+    margin-left:6px;
+    padding:2px 8px;
+    border-radius:999px;
+    background:#f0f0f0;
+    font-size:11px;
+    color:#666;
+    vertical-align:middle;
+  }
+
+  .foot-note {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #666;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 760px) {
+    body { padding: 8px; }
+    h1 { font-size: 18px; }
+    .diagram-tabs { top: 68px; }
+    .subgrid { grid-template-columns: 1fr; }
+    .field-sm { width: 78px; }
+    .field-md { width: 88px; }
+    .field-lg { width: 100%; }
+    .symbol { width: 12px; font-size: 15px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>金物図面連動計算</h1>
+
+  <div class="card top-result">
+    <div class="top-result-title">主要結果</div>
+    <div id="quickResult" class="top-result-value">未入力</div>
+  </div>
+
+  <div class="diagram-tabs">
+    <button type="button" class="tab-btn active" data-diagram-tab="vertical">縦図</button>
+    <button type="button" class="tab-btn" data-diagram-tab="horizontal">横図</button>
+  </div>
+
+  <div id="diagram-vertical" class="diagram-panel active card">
+    <div class="section-title">縦図入力</div>
+    <div class="small">図面にある寸法だけを入力します。金物選択と基準値は下の欄で入力します。</div>
+
+    <div class="diagram-stage">
+      <div class="diagram-canvas" id="verticalCanvas" data-base-width="593" data-base-height="1174" style="width:593px; height:1174px;">
+        <img src="vertical.png" alt="縦図" style="width:593px; height:1174px;" />
+
+        <!-- A -->
+        <label class="overlay-label" style="left:60px; top:90px;">A 見付け</label>
+        <input id="topMituke" class="overlay-input" data-link="topMituke" style="left:78px; top:116px; width:92px; height:38px;" inputmode="decimal" />
+
+        <!-- B -->
+        <label class="overlay-label" style="left:60px; top:200px;">B 上隙間</label>
+        <input id="topGap" class="overlay-input" data-link="topGap" style="left:78px; top:226px; width:92px; height:38px;" inputmode="decimal" />
+
+        <!-- I -->
+        <label class="overlay-label" style="left:182px; top:470px;">I H</label>
+        <input id="diagramH" class="overlay-input" data-link="diagramH" style="left:148px; top:495px; width:92px; height:38px;" inputmode="decimal" />
+
+        <!-- J -->
+        <label class="overlay-label" style="left:320px; top:470px;">J DH</label>
+        <input id="dh" class="overlay-input" data-link="dh" style="left:305px; top:495px; width:92px; height:38px;" inputmode="decimal" />
+
+        <!-- E -->
+        <label class="overlay-label" style="left:28px; top:645px;">E 沓摺①</label>
+        <input id="bottomSill1" class="overlay-input" data-link="bottomSill1" style="left:72px; top:688px; width:116px; height:42px;" inputmode="decimal" />
+
+        <!-- F -->
+        <label class="overlay-label" style="left:28px; top:815px;">F 沓摺②</label>
+        <input id="bottomSill2" class="overlay-input" data-link="bottomSill2" style="left:72px; top:858px; width:116px; height:42px;" inputmode="decimal" />
+
+        <!-- G -->
+        <label class="overlay-label" style="left:28px; top:990px;">G 下隙間</label>
+        <input id="bottomGap" class="overlay-input" data-link="bottomGap" style="left:128px; top:1033px; width:116px; height:42px;" inputmode="decimal" />
+      </div>
+    </div>
+  </div>
+
+  <div id="diagram-horizontal" class="diagram-panel card">
+    <div class="section-title">横図入力</div>
+    <div class="small">U は S と同じ値として自動反映します。DW は専用入力です。</div>
+
+    <div class="diagram-stage">
+      <div class="diagram-canvas" id="horizontalCanvas" data-base-width="986" data-base-height="1174" style="width:986px; height:1174px;">
+        <img src="horizontal.png" alt="横図" style="width:986px; height:1174px;" />
+
+        <!-- S -->
+        <label class="overlay-label" style="left:272px; top:180px;">S 親W</label>
+        <input id="parentW" class="overlay-input" data-link="parentW" style="left:282px; top:206px; width:104px; height:38px;" inputmode="decimal" />
+
+        <!-- T -->
+        <label class="overlay-label" style="left:492px; top:180px;">T 召合わせ</label>
+        <input id="meetingInput" class="overlay-input" data-link="meetingInput" style="left:495px; top:206px; width:78px; height:38px;" inputmode="decimal" />
+
+        <!-- U -->
+        <label class="overlay-label" style="left:670px; top:180px;">U = S</label>
+        <input id="flushMirror" class="overlay-input" data-link="flushMirror" style="left:675px; top:206px; width:104px; height:38px;" inputmode="decimal" readonly />
+
+        <!-- DW -->
+        <label class="overlay-label" style="left:470px; top:720px;">N DW</label>
+        <input id="dwInput" class="overlay-input" data-link="dwInput" style="left:428px; top:748px; width:168px; height:42px;" inputmode="decimal" />
+      </div>
+    </div>
+  </div>
+
+  <div class="subgrid">
+    <div class="card">
+      <div class="section-title">金物選択</div>
+      <div class="row-flex">
+        <div class="field-lg">
+          <div class="label">丁番種類</div>
+          <select id="hingeSelect" class="hinge"></select>
+        </div>
+        <div class="field-lg">
+          <div class="label">ストライク種類</div>
+          <select id="strikeSelect" class="strike"></select>
+        </div>
+        <div class="field-lg">
+          <div class="label">フランス落とし種類</div>
+          <select id="flushSelect" class="flush"></select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">基準入力</div>
+      <div class="row-flex">
+        <div class="field-sm">
+          <div class="label">上基準(C)</div>
+          <input id="topBase" class="door" inputmode="decimal" />
+        </div>
+        <div class="field-sm">
+          <div class="label">下基準</div>
+          <input id="bottomBase" class="door" inputmode="decimal" />
+        </div>
+        <div class="field-sm">
+          <div class="label">ストライク基準</div>
+          <input id="strikeBase" class="door" inputmode="decimal" />
+        </div>
+        <div class="field-sm">
+          <div class="label">枠板厚</div>
+          <input id="frameThickness" class="frame" inputmode="decimal" />
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">寸法表示</div>
+      <div class="row-flex">
+        <div class="field-sm">
+          <div class="label">SA = E + F</div>
+          <input id="strikeFromBottom" class="frame" readonly />
+        </div>
+        <div class="field-sm">
+          <div class="label">DW</div>
+          <input id="dwInputMirror" class="door" readonly />
+        </div>
+        <div class="field-sm">
+          <div class="label">U = S</div>
+          <input id="flushValueMirror" class="flush" readonly />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">丁番位置計算</div>
+    <div class="small">見付け ＋ 上隙間 ＋ 上基準 ＋ 丁番 ＝ 上丁番 / 沓摺① ＋ 沓摺② ＋ 下隙間 ＋ 下基準 － 丁番 ＝ 下丁番</div>
+    <div class="row-flex">
+      <div class="field-sm"><div class="label">A 見付け</div><input id="topMitukeMirror" class="frame" readonly /></div>
+      <div class="symbol">＋</div>
+      <div class="field-sm"><div class="label">B 上隙間</div><input id="topGapMirror" class="gap" readonly /></div>
+      <div class="symbol">＋</div>
+      <div class="field-sm"><div class="label">C 上基準</div><input id="topBaseMirror" class="door" readonly /></div>
+      <div class="symbol">＋</div>
+      <div class="field-sm"><div class="label">丁番</div><input id="hingeValueViewTop" class="hinge" readonly /></div>
+      <div class="symbol">＝</div>
+      <div class="field-sm"><div class="label">上丁番</div><input id="topDim" class="total" readonly /></div>
+
+      <div class="break"></div>
+
+      <div class="field-sm"><div class="label">E 沓摺①</div><input id="bottomSill1Mirror" class="frame" readonly /></div>
+      <div class="symbol">＋</div>
+      <div class="field-sm"><div class="label">F 沓摺②</div><input id="bottomSill2Mirror" class="frame" readonly /></div>
+      <div class="symbol">＋</div>
+      <div class="field-sm"><div class="label">G 下隙間</div><input id="bottomGapMirror" class="gap" readonly /></div>
+      <div class="symbol">＋</div>
+      <div class="field-sm"><div class="label">下基準</div><input id="bottomBaseMirror" class="door" readonly /></div>
+      <div class="symbol">－</div>
+      <div class="field-sm"><div class="label">丁番</div><input id="hingeValueViewBottom" class="hinge" readonly /></div>
+      <div class="symbol">＝</div>
+      <div class="field-sm"><div class="label">下丁番</div><input id="bottomDim" class="total" readonly /></div>
+
+      <div class="break"></div>
+
+      <div class="field-sm"><div class="label">J DH</div><input id="dhMirror" class="door" readonly /></div>
+      <div class="field-sm"><div class="label">丁番枚数</div><input id="hingeCount" class="door" inputmode="numeric" pattern="[0-9]*" /></div>
+      <div class="field-sm"><div class="label">枠全長(H)</div><input id="frameLength" class="total" readonly /></div>
+      <div class="field-sm"><div class="label">I H</div><input id="diagramHMirror" class="frame" readonly /></div>
+    </div>
+  </div>
+
+  <div class="subgrid">
+    <div class="card">
+      <div class="section-title">ストライク位置計算</div>
+      <div class="row-flex">
+        <div class="field-sm"><div class="label">SA 枠下端〜Hまで</div><input id="strikeFromBottomMirror" class="frame" readonly /></div>
+        <div class="symbol">＋</div>
+        <div class="field-sm"><div class="label">基準値</div><input id="strikeBaseMirror" class="door" readonly /></div>
+        <div class="symbol">－</div>
+        <div class="field-sm"><div class="label">下端</div><input id="strikeOffsetView" class="strike" readonly /></div>
+        <div class="symbol">＝</div>
+        <div class="field-sm"><div class="label">位置</div><input id="strikeResult" class="total" readonly /></div>
+
+        <div class="break"></div>
+
+        <div class="field-sm"><div class="label">高さ</div><input id="strikeHeightView" class="strike" readonly /></div>
+        <div class="field-sm"><div class="label">上端</div><input id="strikeTop" class="total" readonly /></div>
+        <div class="field-sm"><div class="label">中心</div><input id="strikeCenter" class="total" readonly /></div>
+        <div class="field-sm"><div class="label">厚み</div><input id="strikeThicknessView" class="strike" readonly /></div>
+        <div class="field-sm"><div class="label">スペーサー</div><input id="spacerResult" class="total" readonly /></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">フランス落とし位置計算</div>
+      <div class="row-flex">
+        <div class="field-sm"><div class="label">S 親W</div><input id="parentWMirror" class="door" readonly /></div>
+        <div class="symbol">＋</div>
+        <div class="field-sm"><div class="label">T 召合わせ</div><input id="meetingInputMirror" class="frame" readonly /></div>
+        <div class="symbol">→</div>
+        <div class="field-sm"><div class="label">召合わせ/2</div><input id="meetingHalf" class="total" readonly /></div>
+        <div class="symbol">＋</div>
+        <div class="field-sm"><div class="label">U = S</div><input id="flushValueView" class="flush" readonly /></div>
+        <div class="symbol">＝</div>
+        <div class="field-sm"><div class="label">位置</div><input id="flushResult" class="total" readonly /></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">DW 入力</div>
+      <div class="row-flex">
+        <div class="field-sm"><div class="label">N DW</div><input id="dwMirror2" class="door" readonly /></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="subgrid">
+    <div class="card">
+      <div class="section-title">丁番追加</div>
+      <div class="row-flex">
+        <div class="field-lg"><div class="label">名前</div><input id="newHingeName" /></div>
+        <div class="field-sm"><div class="label">値</div><input id="newHingeValue" class="hinge" inputmode="decimal" /></div>
+        <div class="field-sm"><div class="label">追加</div><button type="button" id="addHingeBtn" class="btn-add">＋ 追加</button></div>
+      </div>
+      <div id="hingeMessage" class="message"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">ストライク追加</div>
+      <div class="row-flex">
+        <div class="field-lg"><div class="label">名前</div><input id="newStrikeName" /></div>
+        <div class="field-sm"><div class="label">下端</div><input id="newStrikeOffset" class="strike" inputmode="decimal" /></div>
+        <div class="field-sm"><div class="label">高さ</div><input id="newStrikeHeight" class="strike" inputmode="decimal" /></div>
+        <div class="field-sm"><div class="label">厚み</div><input id="newStrikeThickness" class="strike" inputmode="decimal" /></div>
+        <div class="field-sm"><div class="label">追加</div><button type="button" id="addStrikeBtn" class="btn-add">＋ 追加</button></div>
+      </div>
+      <div id="strikeMessage" class="message"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">フランス落とし追加</div>
+      <div class="row-flex">
+        <div class="field-lg"><div class="label">名前</div><input id="newFlushName" /></div>
+        <div class="field-sm"><div class="label">値</div><input id="newFlushValue" class="flush" inputmode="decimal" /></div>
+        <div class="field-sm"><div class="label">追加</div><button type="button" id="addFlushBtn" class="btn-add">＋ 追加</button></div>
+      </div>
+      <div id="flushMessage" class="message"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">金物管理</div>
+    <div class="small">名前が同じ場合のみ重複扱いです。寸法が同じでも名前が違えば追加できます。</div>
+
+    <details class="manage-section" open>
+      <summary><span id="hingeSummaryText">丁番一覧（0件）</span></summary>
+      <div class="manage-section-body"><div id="hingeList" class="manage-list"></div></div>
+    </details>
+
+    <details class="manage-section">
+      <summary><span id="strikeSummaryText">ストライク一覧（0件）</span></summary>
+      <div class="manage-section-body"><div id="strikeList" class="manage-list"></div></div>
+    </details>
+
+    <details class="manage-section">
+      <summary><span id="flushSummaryText">フランス落とし一覧（0件）</span></summary>
+      <div class="manage-section-body"><div id="flushList" class="manage-list"></div></div>
+    </details>
+
+    <div class="card" style="margin:10px 0 0;">
+      <div class="section-title">編集フォーム</div>
+      <div class="small">一覧の編集ボタンで読み込みます。ストライクの値2は「高さ,厚み」の形です。</div>
+      <div class="row-flex">
+        <div class="field-sm"><div class="label">種類</div><select id="manageType"><option value="hinge">丁番</option><option value="strike">ストライク</option><option value="flush">フランス落とし</option></select></div>
+        <div class="field-lg"><div class="label">名前</div><input id="manageName" /></div>
+        <div class="field-sm"><div class="label">値1</div><input id="manageValue1" inputmode="decimal" /></div>
+        <div class="field-md"><div class="label">値2</div><input id="manageValue2" inputmode="decimal" /></div>
+        <div class="field-sm"><div class="label">更新</div><button type="button" id="manageSaveBtn" class="btn-edit">更新</button></div>
+        <div class="field-sm"><div class="label">解除</div><button type="button" id="manageCancelBtn" class="btn-delete">解除</button></div>
+      </div>
+      <div id="manageMessage" class="message"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">計算結果</div>
+    <div id="resultText" class="result-box">※ 図面または入力欄に必要項目を入力してください</div>
+    <div class="foot-note">※ 図面上の青い入力欄に数字を入れると、下の関連項目に自動反映されます。<br>※ SA（枠下端〜Hまで）は E + F の合計値として自動計算されます。</div>
+  </div>
+</div>
+
+<script>
+const HINGE_STORAGE_KEY = "hingeCalculatorDiagramV1";
+const HINGE_SELECTED_KEY = "hingeCalculatorSelectedHingeDiagramV1";
+const STRIKE_STORAGE_KEY = "hingeCalculatorStrikesDiagramV1";
+const STRIKE_SELECTED_KEY = "hingeCalculatorSelectedStrikeDiagramV1";
+const FLUSH_STORAGE_KEY = "hingeCalculatorFlushesDiagramV1";
+const FLUSH_SELECTED_KEY = "hingeCalculatorSelectedFlushDiagramV1";
+
+let hinges = [];
+let strikes = [];
+let flushes = [];
+let manageEditing = { type: null, index: null };
+
+const defaultHinges = [
+  { name: "DH-508S（3+12）", value: 15, isDefault: true },
+  { name: "401-SL501（1+13）", value: 14, isDefault: true }
+];
+const defaultStrikes = [
+  { name: "LA", offset: 22.5, height: 110, thickness: 2.5, isDefault: true }
+];
+const defaultFlushes = [
+  { name: "DE6VN", value: 18.5, isDefault: true },
+  { name: "DC800", value: 20.5, isDefault: true }
+];
+
+function storageAvailable() {
+  try {
+    const test = "__storage_test__";
+    localStorage.setItem(test, test);
+    localStorage.removeItem(test);
+    return true;
+  } catch {
+    return false;
+  }
+}
+const canUseStorage = storageAvailable();
+
+function safeGet(key) {
+  if (!canUseStorage) return null;
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+function safeSet(key, value) {
+  if (!canUseStorage) return;
+  try { localStorage.setItem(key, value); } catch {}
+}
+
+function toHalfWidth(str) {
+  return String(str)
+    .replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 65248))
+    .replace(/－/g, "-")
+    .replace(/−/g, "-")
+    .replace(/ー/g, "-")
+    .replace(/．/g, ".")
+    .replace(/，/g, ".")
+    .replace(/　/g, " ");
+}
+function normalizeNumberInputValue(v) {
+  return toHalfWidth(v).replace(/[^\d.\-,]/g, "");
+}
+function getVal(id) {
+  const el = document.getElementById(id);
+  if (!el) return 0;
+  let v = el.value;
+  if (!v) return 0;
+  v = toHalfWidth(v).replace(/[^\d.\-]/g, "").trim();
+  if (v === "" || v === "-" || v === "." || v === "-.") return 0;
+  return Number(v) || 0;
+}
+function setValue(id, val) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.value = (val || val === 0) ? val : "";
+}
+function setText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+function showMessage(id, text, type) {
+  const box = document.getElementById(id);
+  if (!box) return;
+  box.textContent = text;
+  box.className = "message " + type;
+  box.style.display = "block";
+}
+function clearMessage(id) {
+  const box = document.getElementById(id);
+  if (!box) return;
+  box.textContent = "";
+  box.style.display = "none";
+  box.className = "message";
+}
+function escapeHtml(str) {
+  return String(str)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+function normalizeHinge(item) {
+  return { name: String(item.name).trim(), value: Number(item.value), isDefault: Boolean(item.isDefault) };
+}
+function normalizeStrike(item) {
+  return {
+    name: String(item.name).trim(),
+    offset: Number(item.offset),
+    height: Number(item.height),
+    thickness: Number(item.thickness) || 0,
+    isDefault: Boolean(item.isDefault)
+  };
+}
+function normalizeFlush(item) {
+  return { name: String(item.name).trim(), value: Number(item.value), isDefault: Boolean(item.isDefault) };
+}
+
+function loadSavedHinges() {
+  try {
+    const raw = safeGet(HINGE_STORAGE_KEY);
+    if (!raw) { hinges = defaultHinges.map(normalizeHinge); return; }
+    const parsed = JSON.parse(raw);
+    hinges = Array.isArray(parsed)
+      ? parsed.filter(item => item && typeof item.name === "string" && item.name.trim() !== "" && Number.isFinite(Number(item.value))).map(normalizeHinge)
+      : defaultHinges.map(normalizeHinge);
+
+    defaultHinges.forEach(def => {
+      const exists = hinges.some(h => h.name === def.name && Number(h.value) === Number(def.value));
+      if (!exists) hinges.unshift(normalizeHinge(def));
+    });
+  } catch {
+    hinges = defaultHinges.map(normalizeHinge);
+  }
+}
+function saveHinges() { safeSet(HINGE_STORAGE_KEY, JSON.stringify(hinges)); }
+
+function loadSavedStrikes() {
+  try {
+    const raw = safeGet(STRIKE_STORAGE_KEY);
+    if (!raw) { strikes = defaultStrikes.map(normalizeStrike); return; }
+    const parsed = JSON.parse(raw);
+    strikes = Array.isArray(parsed)
+      ? parsed.filter(item => item && typeof item.name === "string" && item.name.trim() !== "" && Number.isFinite(Number(item.offset)) && Number.isFinite(Number(item.height))).map(normalizeStrike)
+      : defaultStrikes.map(normalizeStrike);
+
+    defaultStrikes.forEach(def => {
+      const exists = strikes.some(s => s.name === def.name && Number(s.offset) === Number(def.offset) && Number(s.height) === Number(def.height) && Number(s.thickness) === Number(def.thickness));
+      if (!exists) strikes.unshift(normalizeStrike(def));
+    });
+  } catch {
+    strikes = defaultStrikes.map(normalizeStrike);
+  }
+}
+function saveStrikes() { safeSet(STRIKE_STORAGE_KEY, JSON.stringify(strikes)); }
+
+function loadSavedFlushes() {
+  try {
+    const raw = safeGet(FLUSH_STORAGE_KEY);
+    if (!raw) { flushes = defaultFlushes.map(normalizeFlush); return; }
+    const parsed = JSON.parse(raw);
+    flushes = Array.isArray(parsed)
+      ? parsed.filter(item => item && typeof item.name === "string" && item.name.trim() !== "" && Number.isFinite(Number(item.value))).map(normalizeFlush)
+      : defaultFlushes.map(normalizeFlush);
+
+    defaultFlushes.forEach(def => {
+      const exists = flushes.some(f => f.name === def.name && Number(f.value) === Number(def.value));
+      if (!exists) flushes.unshift(normalizeFlush(def));
+    });
+  } catch {
+    flushes = defaultFlushes.map(normalizeFlush);
+  }
+}
+function saveFlushes() { safeSet(FLUSH_STORAGE_KEY, JSON.stringify(flushes)); }
+
+function loadHingeOptions() {
+  const select = document.getElementById("hingeSelect");
+  const selectedBefore = safeGet(HINGE_SELECTED_KEY) || "";
+  select.innerHTML = "";
+  hinges.forEach((h, index) => select.add(new Option(h.isDefault ? `${h.name}（標準）` : h.name, index)));
+  if (selectedBefore !== "") {
+    const idx = Number(selectedBefore);
+    if (Number.isInteger(idx) && idx >= 0 && idx < hinges.length) select.value = String(idx);
+  }
+  if (!select.value && hinges.length > 0) select.selectedIndex = 0;
+  safeSet(HINGE_SELECTED_KEY, select.value);
+}
+function loadStrikeOptions() {
+  const select = document.getElementById("strikeSelect");
+  const selectedBefore = safeGet(STRIKE_SELECTED_KEY) || "";
+  select.innerHTML = "";
+  strikes.forEach((s, index) => select.add(new Option(s.isDefault ? `${s.name}（標準）` : s.name, index)));
+  if (selectedBefore !== "") {
+    const idx = Number(selectedBefore);
+    if (Number.isInteger(idx) && idx >= 0 && idx < strikes.length) select.value = String(idx);
+  }
+  if (!select.value && strikes.length > 0) select.selectedIndex = 0;
+  safeSet(STRIKE_SELECTED_KEY, select.value);
+}
+function loadFlushOptions() {
+  const select = document.getElementById("flushSelect");
+  const selectedBefore = safeGet(FLUSH_SELECTED_KEY) || "";
+  select.innerHTML = "";
+  flushes.forEach((f, index) => select.add(new Option(f.isDefault ? `${f.name}（標準）` : f.name, index)));
+  if (selectedBefore !== "") {
+    const idx = Number(selectedBefore);
+    if (Number.isInteger(idx) && idx >= 0 && idx < flushes.length) select.value = String(idx);
+  }
+  if (!select.value && flushes.length > 0) select.selectedIndex = 0;
+  safeSet(FLUSH_SELECTED_KEY, select.value);
+}
+
+function getSelectedHinge() {
+  const idx = Number(document.getElementById("hingeSelect").value);
+  return (Number.isInteger(idx) && idx >= 0 && idx < hinges.length) ? hinges[idx] : null;
+}
+function getSelectedStrike() {
+  const idx = Number(document.getElementById("strikeSelect").value);
+  return (Number.isInteger(idx) && idx >= 0 && idx < strikes.length) ? strikes[idx] : null;
+}
+function getSelectedFlush() {
+  const idx = Number(document.getElementById("flushSelect").value);
+  return (Number.isInteger(idx) && idx >= 0 && idx < flushes.length) ? flushes[idx] : null;
+}
+
+function refreshSummaryCounts() {
+  setText("hingeSummaryText", `丁番一覧（${hinges.length}件）`);
+  setText("strikeSummaryText", `ストライク一覧（${strikes.length}件）`);
+  setText("flushSummaryText", `フランス落とし一覧（${flushes.length}件）`);
+}
+
+function refreshHingeList() {
+  const box = document.getElementById("hingeList");
+  box.innerHTML = "";
+  hinges.forEach((item, index) => {
+    const card = document.createElement("div");
+    card.className = "item-card";
+    card.innerHTML = `<div class="item-title">${escapeHtml(item.name)}${item.isDefault ? '<span class="badge-default">標準</span>' : ''}</div><div class="item-meta">値: ${item.value}</div><div class="item-actions"><button type="button" class="btn-edit" data-action="edit" data-kind="hinge" data-index="${index}">編集</button><button type="button" class="btn-delete" data-action="delete" data-kind="hinge" data-index="${index}" ${item.isDefault ? "disabled" : ""}>削除</button></div>`;
+    box.appendChild(card);
+  });
+}
+function refreshStrikeList() {
+  const box = document.getElementById("strikeList");
+  box.innerHTML = "";
+  strikes.forEach((item, index) => {
+    const card = document.createElement("div");
+    card.className = "item-card";
+    card.innerHTML = `<div class="item-title">${escapeHtml(item.name)}${item.isDefault ? '<span class="badge-default">標準</span>' : ''}</div><div class="item-meta">下端: ${item.offset} / 高さ: ${item.height} / 厚み: ${item.thickness}</div><div class="item-actions"><button type="button" class="btn-edit" data-action="edit" data-kind="strike" data-index="${index}">編集</button><button type="button" class="btn-delete" data-action="delete" data-kind="strike" data-index="${index}" ${item.isDefault ? "disabled" : ""}>削除</button></div>`;
+    box.appendChild(card);
+  });
+}
+function refreshFlushList() {
+  const box = document.getElementById("flushList");
+  box.innerHTML = "";
+  flushes.forEach((item, index) => {
+    const card = document.createElement("div");
+    card.className = "item-card";
+    card.innerHTML = `<div class="item-title">${escapeHtml(item.name)}${item.isDefault ? '<span class="badge-default">標準</span>' : ''}</div><div class="item-meta">値: ${item.value}</div><div class="item-actions"><button type="button" class="btn-edit" data-action="edit" data-kind="flush" data-index="${index}">編集</button><button type="button" class="btn-delete" data-action="delete" data-kind="flush" data-index="${index}" ${item.isDefault ? "disabled" : ""}>削除</button></div>`;
+    box.appendChild(card);
+  });
+}
+function refreshAllLists() {
+  refreshHingeList();
+  refreshStrikeList();
+  refreshFlushList();
+  refreshSummaryCounts();
+}
+
+function addHingeFromTab() {
+  clearMessage("hingeMessage");
+  const name = document.getElementById("newHingeName").value.trim();
+  const value = getVal("newHingeValue");
+  if (!name) return showMessage("hingeMessage", "名前を入力してください", "warn");
+  if (!Number.isFinite(value) || value === 0) return showMessage("hingeMessage", "値を入力してください", "warn");
+  if (hinges.some(h => h.name.trim().toLowerCase() === name.toLowerCase())) return showMessage("hingeMessage", "登録済みです（同じ名前）", "warn");
+  hinges.push({ name, value, isDefault: false });
+  saveHinges(); loadHingeOptions();
+  document.getElementById("hingeSelect").value = String(hinges.length - 1);
+  safeSet(HINGE_SELECTED_KEY, String(hinges.length - 1));
+  document.getElementById("newHingeName").value = "";
+  document.getElementById("newHingeValue").value = "";
+  refreshAllLists();
+  showMessage("hingeMessage", "追加しました", "ok");
+  calc();
+}
+function addStrikeFromTab() {
+  clearMessage("strikeMessage");
+  const name = document.getElementById("newStrikeName").value.trim();
+  const offset = getVal("newStrikeOffset");
+  const height = getVal("newStrikeHeight");
+  const thickness = getVal("newStrikeThickness");
+  if (!name) return showMessage("strikeMessage", "名前を入力してください", "warn");
+  if (!Number.isFinite(offset) || offset === 0 || !Number.isFinite(height) || height === 0) return showMessage("strikeMessage", "下端と高さを入力してください", "warn");
+  if (!Number.isFinite(thickness) || thickness === 0) return showMessage("strikeMessage", "厚みを入力してください", "warn");
+  if (strikes.some(s => s.name.trim().toLowerCase() === name.toLowerCase())) return showMessage("strikeMessage", "登録済みです（同じ名前）", "warn");
+  strikes.push({ name, offset, height, thickness, isDefault: false });
+  saveStrikes(); loadStrikeOptions();
+  document.getElementById("strikeSelect").value = String(strikes.length - 1);
+  safeSet(STRIKE_SELECTED_KEY, String(strikes.length - 1));
+  document.getElementById("newStrikeName").value = "";
+  document.getElementById("newStrikeOffset").value = "";
+  document.getElementById("newStrikeHeight").value = "";
+  document.getElementById("newStrikeThickness").value = "";
+  refreshAllLists();
+  showMessage("strikeMessage", "追加しました", "ok");
+  calc();
+}
+function addFlushFromTab() {
+  clearMessage("flushMessage");
+  const name = document.getElementById("newFlushName").value.trim();
+  const value = getVal("newFlushValue");
+  if (!name) return showMessage("flushMessage", "名前を入力してください", "warn");
+  if (!Number.isFinite(value) || value === 0) return showMessage("flushMessage", "値を入力してください", "warn");
+  if (flushes.some(f => f.name.trim().toLowerCase() === name.toLowerCase())) return showMessage("flushMessage", "登録済みです（同じ名前）", "warn");
+  flushes.push({ name, value, isDefault: false });
+  saveFlushes(); loadFlushOptions();
+  document.getElementById("flushSelect").value = String(flushes.length - 1);
+  safeSet(FLUSH_SELECTED_KEY, String(flushes.length - 1));
+  document.getElementById("newFlushName").value = "";
+  document.getElementById("newFlushValue").value = "";
+  refreshAllLists();
+  showMessage("flushMessage", "追加しました", "ok");
+  calc();
+}
+
+function startManageEdit(kind, index) {
+  clearMessage("manageMessage");
+  manageEditing = { type: kind, index };
+  document.getElementById("manageType").value = kind;
+  if (kind === "hinge") {
+    const item = hinges[index];
+    document.getElementById("manageName").value = item.name;
+    document.getElementById("manageValue1").value = item.value;
+    document.getElementById("manageValue2").value = "";
+  }
+  if (kind === "strike") {
+    const item = strikes[index];
+    document.getElementById("manageName").value = item.name;
+    document.getElementById("manageValue1").value = item.offset;
+    document.getElementById("manageValue2").value = item.height + "," + item.thickness;
+  }
+  if (kind === "flush") {
+    const item = flushes[index];
+    document.getElementById("manageName").value = item.name;
+    document.getElementById("manageValue1").value = item.value;
+    document.getElementById("manageValue2").value = "";
+  }
+}
+function clearManageEdit() {
+  manageEditing = { type: null, index: null };
+  document.getElementById("manageType").value = "hinge";
+  document.getElementById("manageName").value = "";
+  document.getElementById("manageValue1").value = "";
+  document.getElementById("manageValue2").value = "";
+}
+function parseStrikeExtra(text) {
+  const raw = toHalfWidth(text).split(",");
+  const h = Number((raw[0] || "").trim()) || 0;
+  const t = Number((raw[1] || "").trim()) || 0;
+  return { height: h, thickness: t };
+}
+function saveManageEdit() {
+  clearMessage("manageMessage");
+  const kind = manageEditing.type;
+  const index = manageEditing.index;
+  if (kind === null || index === null) return showMessage("manageMessage", "一覧から編集する項目を選んでください", "warn");
+  const name = document.getElementById("manageName").value.trim();
+  const v1 = Number(normalizeNumberInputValue(document.getElementById("manageValue1").value)) || 0;
+  const v2raw = document.getElementById("manageValue2").value;
+  if (!name) return showMessage("manageMessage", "名前を入力してください", "warn");
+
+  if (kind === "hinge") {
+    if (!v1) return showMessage("manageMessage", "値を入力してください", "warn");
+    if (hinges.some((x, i) => i !== index && x.name.trim().toLowerCase() === name.toLowerCase())) return showMessage("manageMessage", "登録済みです（同じ名前）", "warn");
+    hinges[index].name = name;
+    hinges[index].value = v1;
+    saveHinges(); loadHingeOptions();
+  }
+  if (kind === "strike") {
+    if (!v1) return showMessage("manageMessage", "下端を入力してください", "warn");
+    const extra = parseStrikeExtra(v2raw);
+    if (!extra.height || !extra.thickness) return showMessage("manageMessage", "値2に『高さ,厚み』を入力してください 例: 110,2.5", "warn");
+    if (strikes.some((x, i) => i !== index && x.name.trim().toLowerCase() === name.toLowerCase())) return showMessage("manageMessage", "登録済みです（同じ名前）", "warn");
+    strikes[index].name = name;
+    strikes[index].offset = v1;
+    strikes[index].height = extra.height;
+    strikes[index].thickness = extra.thickness;
+    saveStrikes(); loadStrikeOptions();
+  }
+  if (kind === "flush") {
+    if (!v1) return showMessage("manageMessage", "値を入力してください", "warn");
+    if (flushes.some((x, i) => i !== index && x.name.trim().toLowerCase() === name.toLowerCase())) return showMessage("manageMessage", "登録済みです（同じ名前）", "warn");
+    flushes[index].name = name;
+    flushes[index].value = v1;
+    saveFlushes(); loadFlushOptions();
+  }
+  refreshAllLists();
+  clearManageEdit();
+  showMessage("manageMessage", "更新しました", "ok");
+  calc();
+}
+function deleteManaged(kind, index) {
+  clearMessage("manageMessage");
+  if (kind === "hinge") {
+    const item = hinges[index];
+    if (!item || item.isDefault) return showMessage("manageMessage", "標準の丁番は削除できません", "warn");
+    hinges.splice(index, 1); saveHinges(); loadHingeOptions();
+  }
+  if (kind === "strike") {
+    const item = strikes[index];
+    if (!item || item.isDefault) return showMessage("manageMessage", "標準のストライクは削除できません", "warn");
+    strikes.splice(index, 1); saveStrikes(); loadStrikeOptions();
+  }
+  if (kind === "flush") {
+    const item = flushes[index];
+    if (!item || item.isDefault) return showMessage("manageMessage", "標準のフランス落としは削除できません", "warn");
+    flushes.splice(index, 1); saveFlushes(); loadFlushOptions();
+  }
+  if (manageEditing.type === kind && manageEditing.index === index) clearManageEdit();
+  refreshAllLists();
+  showMessage("manageMessage", "削除しました", "info");
+  calc();
+}
+
+document.addEventListener("click", (e) => {
+  const actionBtn = e.target.closest("button[data-action]");
+  if (!actionBtn) return;
+  const kind = actionBtn.dataset.kind;
+  const index = Number(actionBtn.dataset.index);
+  const action = actionBtn.dataset.action;
+  if (action === "edit") startManageEdit(kind, index);
+  if (action === "delete") deleteManaged(kind, index);
+});
+
+function bindDiagramTabs() {
+  document.querySelectorAll("[data-diagram-tab]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("[data-diagram-tab]").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".diagram-panel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById(`diagram-${btn.dataset.diagramTab}`).classList.add("active");
+      setTimeout(fitAllDiagramCanvases, 0);
+    });
+  });
+}
+
+function fitDiagramCanvas(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const stage = canvas.parentElement;
+  const baseWidth = Number(canvas.dataset.baseWidth);
+  const baseHeight = Number(canvas.dataset.baseHeight);
+  const stageWidth = stage.clientWidth;
+  if (!baseWidth || !stageWidth) return;
+  const scale = stageWidth / baseWidth;
+  canvas.style.transform = `scale(${scale})`;
+  stage.style.height = `${baseHeight * scale}px`;
+}
+
+function fitAllDiagramCanvases() {
+  fitDiagramCanvas("verticalCanvas");
+  fitDiagramCanvas("horizontalCanvas");
+}
+
+function syncOverlayToInput(link, value) {
+  document.querySelectorAll(`.overlay-input[data-link="${link}"]`).forEach(el => {
+    if (document.activeElement !== el) el.value = value || value === 0 ? value : "";
+  });
+}
+
+function syncMirrors() {
+  setValue("topMitukeMirror", getVal("topMituke") || "");
+  setValue("topGapMirror", getVal("topGap") || "");
+  setValue("topBaseMirror", getVal("topBase") || "");
+  setValue("bottomSill1Mirror", getVal("bottomSill1") || "");
+  setValue("bottomSill2Mirror", getVal("bottomSill2") || "");
+  setValue("bottomGapMirror", getVal("bottomGap") || "");
+  setValue("bottomBaseMirror", getVal("bottomBase") || "");
+  setValue("dhMirror", getVal("dh") || "");
+  setValue("diagramHMirror", getVal("diagramH") || "");
+  setValue("strikeFromBottomMirror", getVal("strikeFromBottom") || "");
+  setValue("strikeBaseMirror", getVal("strikeBase") || "");
+  setValue("parentWMirror", getVal("parentW") || "");
+  setValue("meetingInputMirror", getVal("meetingInput") || "");
+  setValue("dwMirror2", getVal("dwInput") || "");
+  setValue("dwInputMirror", getVal("dwInput") || "");
+}
+
+function calc() {
+  const topMituke = getVal("topMituke");
+  const topGap = getVal("topGap");
+  const topBase = getVal("topBase");
+  const bottomSill1 = getVal("bottomSill1");
+  const bottomSill2 = getVal("bottomSill2");
+  const bottomSill = bottomSill1 + bottomSill2;
+  const bottomGap = getVal("bottomGap");
+  const bottomBase = getVal("bottomBase");
+  const dh = getVal("dh");
+  const count = Math.floor(getVal("hingeCount"));
+
+  const strikeFromBottom = bottomSill1 + bottomSill2;
+  setValue("strikeFromBottom", strikeFromBottom || "");
+
+  const selectedHinge = getSelectedHinge();
+  const hingeValue = selectedHinge ? Number(selectedHinge.value) : 0;
+  setValue("hingeValueViewTop", hingeValue || "");
+  setValue("hingeValueViewBottom", hingeValue || "");
+
+  const topDim = topMituke + topGap + topBase + hingeValue;
+  const bottomDim = bottomSill + bottomGap + bottomBase - hingeValue;
+  const frameLength = topMituke + topGap + dh + bottomGap + bottomSill;
+  setValue("topDim", topDim || "");
+  setValue("bottomDim", bottomDim || "");
+  setValue("frameLength", frameLength || "");
+
+  const selectedStrike = getSelectedStrike();
+  const strikeOffset = selectedStrike ? Number(selectedStrike.offset) : 0;
+  const strikeHeight = selectedStrike ? Number(selectedStrike.height) : 0;
+  const strikeThickness = selectedStrike ? Number(selectedStrike.thickness) : 0;
+  setValue("strikeOffsetView", strikeOffset || "");
+  setValue("strikeHeightView", strikeHeight || "");
+  setValue("strikeThicknessView", strikeThickness || "");
+
+  const strikeBase = getVal("strikeBase");
+  const strikeResult = strikeFromBottom + strikeBase - strikeOffset;
+  setValue("strikeResult", strikeResult || "");
+  const strikeTop = strikeResult + strikeHeight;
+  const strikeCenter = strikeResult + strikeHeight / 2;
+  setValue("strikeTop", strikeTop || "");
+  setValue("strikeCenter", strikeCenter || "");
+
+  const frameThickness = getVal("frameThickness");
+  const spacer = strikeThickness - frameThickness;
+  setValue("spacerResult", spacer > 0 ? spacer.toFixed(1) : spacer === 0 ? "0" : "");
+
+  const parentW = getVal("parentW");
+  const meetingInput = getVal("meetingInput");
+  const meetingHalf = meetingInput / 2;
+  const flushMirror = parentW;
+  setValue("flushMirror", flushMirror || "");
+  setValue("flushValueView", flushMirror || "");
+  setValue("flushValueMirror", flushMirror || "");
+  const flushResult = parentW + meetingHalf + flushMirror;
+  setValue("meetingHalf", meetingHalf || "");
+  setValue("flushResult", flushResult || "");
+
+  safeSet(HINGE_SELECTED_KEY, document.getElementById("hingeSelect").value);
+  safeSet(STRIKE_SELECTED_KEY, document.getElementById("strikeSelect").value);
+  safeSet(FLUSH_SELECTED_KEY, document.getElementById("flushSelect").value);
+
+  syncOverlayToInput("topMituke", topMituke || "");
+  syncOverlayToInput("topGap", topGap || "");
+  syncOverlayToInput("diagramH", getVal("diagramH") || "");
+  syncOverlayToInput("dh", dh || "");
+  syncOverlayToInput("bottomSill1", bottomSill1 || "");
+  syncOverlayToInput("bottomSill2", bottomSill2 || "");
+  syncOverlayToInput("bottomGap", bottomGap || "");
+  syncOverlayToInput("parentW", parentW || "");
+  syncOverlayToInput("meetingInput", meetingInput || "");
+  syncOverlayToInput("flushMirror", flushMirror || "");
+  syncOverlayToInput("dwInput", getVal("dwInput") || "");
+
+  syncMirrors();
+
+  const result = document.getElementById("resultText");
+  let text = "";
+
+  if (frameLength > 0 && topDim > 0 && bottomDim > 0 && count >= 2) {
+    const usableLength = frameLength - topDim - bottomDim;
+    if (usableLength < 0) {
+      text += "■ 丁番\n※ 枠全長より上下寸法の合計が大きくなっています\n\n";
+    } else {
+      const pitch = usableLength / (count - 1);
+      const positions = [];
+      for (let i = 0; i < count; i++) positions.push(topDim + pitch * i);
+      text += "■ 丁番\n";
+      text += "枠全長: " + frameLength.toFixed(1) + " mm\n";
+      text += "ピッチ: " + pitch.toFixed(1) + " mm\n";
+      positions.forEach((p, i) => { text += (i + 1) + "枚目: " + p.toFixed(1) + " mm\n"; });
+      text += "\n";
+    }
+  } else {
+    text += "■ 丁番\n※ A・B・C・E・F・G・J・丁番枚数を確認してください\n\n";
+  }
+
+  text += "■ ストライク\n";
+  if (strikeResult > 0) {
+    text += "SA（枠下端〜Hまで）: " + strikeFromBottom.toFixed(1) + " mm\n";
+    text += "位置: " + strikeResult.toFixed(1) + " mm\n";
+    text += "上端: " + strikeTop.toFixed(1) + " mm\n";
+    text += "中心: " + strikeCenter.toFixed(1) + " mm\n";
+    if (spacer > 0) text += "スペーサー: " + spacer.toFixed(1) + " mm\n";
+    else if (spacer === 0) text += "スペーサー: 0 mm\n";
+    else text += "スペーサー: 不要\n";
+    text += "\n";
+  } else {
+    text += "※ E・F・ストライク基準・ストライク種類を確認してください\n\n";
+  }
+
+  text += "■ フランス落とし\n";
+  if (flushResult > 0) {
+    text += "親W: " + parentW.toFixed(1) + " mm\n";
+    text += "召合わせ/2: " + meetingHalf.toFixed(1) + " mm\n";
+    text += "U=S: " + flushMirror.toFixed(1) + " mm\n";
+    text += "位置: " + flushResult.toFixed(1) + " mm\n\n";
+  } else {
+    text += "※ 親W・召合わせを確認してください\n\n";
+  }
+
+  text += "■ DW\n";
+  const dw = getVal("dwInput");
+  if (dw > 0) {
+    text += "DW: " + dw.toFixed(1) + " mm\n\n";
+  } else {
+    text += "※ DWを入力してください\n\n";
+  }
+
+  text += "■ 選択中の金物\n";
+  text += "丁番: " + (selectedHinge ? selectedHinge.name : "未選択") + "\n";
+  text += "ストライク: " + (selectedStrike ? selectedStrike.name : "未選択") + "\n";
+  text += "フランス落とし: " + (getSelectedFlush() ? getSelectedFlush().name : "未選択") + "\n";
+
+  result.textContent = text;
+
+  const quickLines = [];
+  if (topDim > 0) quickLines.push("上丁番 " + topDim.toFixed(1) + " mm");
+  if (bottomDim > 0) quickLines.push("下丁番 " + bottomDim.toFixed(1) + " mm");
+  if (strikeResult > 0) quickLines.push("ストライク " + strikeResult.toFixed(1) + " mm");
+  if (flushResult > 0) quickLines.push("フランス落とし " + flushResult.toFixed(1) + " mm");
+  if (dw > 0) quickLines.push("DW " + dw.toFixed(1) + " mm");
+
+  document.getElementById("quickResult").textContent =
+    quickLines.length ? quickLines.join(" / ") : "未入力";
+}
+
+function bindOverlayInputs() {
+  document.querySelectorAll(".overlay-input").forEach(input => {
+    input.addEventListener("input", e => {
+      e.target.value = normalizeNumberInputValue(e.target.value);
+      calc();
+    });
+    input.addEventListener("focus", () => {
+      if (typeof input.select === "function") input.select();
+    });
+  });
+}
+
+function bindGeneralInputs() {
+  [
+    "topBase",
+    "bottomBase",
+    "strikeBase",
+    "frameThickness",
+    "hingeCount"
+  ].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("input", e => {
+      e.target.value = normalizeNumberInputValue(e.target.value);
+      calc();
+    });
+  });
+
+  ["hingeSelect", "strikeSelect", "flushSelect"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("change", calc);
+  });
+}
+
+function initDefaults() {
+  if (!getVal("topBase")) setValue("topBase", 150);
+  if (!getVal("bottomBase")) setValue("bottomBase", 150);
+  if (!getVal("hingeCount")) setValue("hingeCount", 2);
+}
+
+function preventIosZoomLikeBehavior() {
+  document.querySelectorAll("input, select").forEach(el => {
+    el.setAttribute("autocapitalize", "off");
+    el.setAttribute("autocomplete", "off");
+    el.setAttribute("autocorrect", "off");
+    el.setAttribute("spellcheck", "false");
+  });
+}
+
+function initButtons() {
+  document.getElementById("addHingeBtn").addEventListener("click", addHingeFromTab);
+  document.getElementById("addStrikeBtn").addEventListener("click", addStrikeFromTab);
+  document.getElementById("addFlushBtn").addEventListener("click", addFlushFromTab);
+  document.getElementById("manageSaveBtn").addEventListener("click", saveManageEdit);
+  document.getElementById("manageCancelBtn").addEventListener("click", () => {
+    clearManageEdit();
+    clearMessage("manageMessage");
+  });
+}
+
+function init() {
+  loadSavedHinges();
+  loadSavedStrikes();
+  loadSavedFlushes();
+  loadHingeOptions();
+  loadStrikeOptions();
+  loadFlushOptions();
+  refreshAllLists();
+  bindDiagramTabs();
+  bindOverlayInputs();
+  bindGeneralInputs();
+  initButtons();
+  initDefaults();
+  preventIosZoomLikeBehavior();
+  calc();
+  fitAllDiagramCanvases();
+}
+
+window.addEventListener("resize", fitAllDiagramCanvases);
+window.addEventListener("load", fitAllDiagramCanvases);
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
