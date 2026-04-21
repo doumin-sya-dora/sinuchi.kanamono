@@ -2,80 +2,448 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>金物配置ツール</title>
-
 <style>
-body {
-  margin: 0;
-  font-family: sans-serif;
-}
+  :root {
+    --bg: #f3f3f3;
+    --card: #ffffff;
+    --border: #d8d8d8;
+    --text: #222;
+    --sub: #666;
+    --blue: #1698f3;
+    --orange: #ff8a00;
+    --radius: 14px;
+    --shadow: 0 1px 4px rgba(0,0,0,.06);
+    --result-bg: #fff9df;
+    --result-border: #e0b63f;
+  }
 
-.wrapper {
-  max-width: 1000px;
-  margin: auto;
-}
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
 
-.diagram-stage {
-  position: relative;
-  width: 100%;
-}
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
+    padding: 10px;
+  }
 
-.diagram-canvas {
-  position: relative;
-  transform-origin: top left;
-}
+  .app {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
 
-.diagram-canvas img {
-  width: 100%;
-  display: block;
-}
+  h1 {
+    margin: 4px 0 12px;
+    text-align: center;
+    font-size: 20px;
+  }
 
-.overlay-input {
-  position: absolute;
-  background: rgba(0,128,255,0.2);
-  border: 2px solid #007bff;
-  text-align: center;
-  cursor: move;
-}
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 12px;
+    margin-bottom: 12px;
+  }
 
-.overlay-label {
-  position: absolute;
-  font-size: 12px;
-  color: #000;
-}
+  .section-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
 
-.layout-edit-on .overlay-input {
-  background: rgba(255,0,0,0.2);
-  border: 2px solid red;
-}
+  .small {
+    font-size: 12px;
+    color: var(--sub);
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
 
-button {
-  margin: 10px;
-}
+  .top-result {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: rgba(255,255,255,.95);
+    backdrop-filter: blur(8px);
+  }
+
+  .top-result-title {
+    font-size: 12px;
+    color: var(--sub);
+    margin-bottom: 4px;
+  }
+
+  .top-result-value {
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.5;
+  }
+
+  .diagram-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    position: sticky;
+    top: 72px;
+    z-index: 35;
+    background: var(--bg);
+    padding-bottom: 8px;
+  }
+
+  .tab-btn {
+    min-height: 42px;
+    border: 1px solid #cfcfcf;
+    border-radius: 12px;
+    background: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .tab-btn.active {
+    background: #222;
+    color: #fff;
+    border-color: #222;
+  }
+
+  .diagram-panel { display: none; }
+  .diagram-panel.active { display: block; }
+
+  .row-flex {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 6px;
+    align-items: end;
+  }
+
+  .field-sm { width: 96px; }
+  .field-md { width: 130px; }
+  .field-lg { width: 200px; }
+  .field-xl { width: 260px; }
+
+  .label {
+    font-size: 12px;
+    margin-bottom: 4px;
+    color: #444;
+    padding-left: 2px;
+  }
+
+  input, select, button, textarea {
+    width: 100%;
+    min-height: 40px;
+    border-radius: 10px;
+    border: 1px solid #c9c9c9;
+    font-size: 16px;
+    padding: 6px 8px;
+    background: #fff;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  textarea {
+    min-height: 120px;
+    resize: vertical;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px;
+  }
+
+  input[readonly] {
+    background: #f5f5f5;
+  }
+
+  button {
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  .btn-add { background: #f5fff5; }
+  .btn-delete { background: #fff7f7; }
+  .btn-edit { background: #f4f8ff; }
+
+  .message {
+    margin-top: 8px;
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 12px;
+    text-align: center;
+    display: none;
+  }
+
+  .message.ok { background:#e8f5e9; }
+  .message.warn { background:#fff3e0; }
+  .message.info { background:#e3f2fd; }
+
+  .diagram-stage {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    border-radius: 12px;
+    background: #fff;
+  }
+
+  .diagram-canvas {
+    position: relative;
+    transform-origin: top left;
+  }
+
+  .diagram-canvas img {
+    display: block;
+    position: absolute;
+    inset: 0;
+    user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: none;
+  }
+
+  .overlay-input {
+    position: absolute;
+    border: 2px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: #111;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 700;
+    padding: 0 4px;
+    outline: none;
+    z-index: 10;
+  }
+
+  .overlay-label {
+    position: absolute;
+    font-size: 11px;
+    font-weight: 700;
+    color: #222;
+    background: rgba(255,255,255,.88);
+    padding: 1px 4px;
+    border-radius: 6px;
+    pointer-events: none;
+    white-space: nowrap;
+    opacity: 0;
+    z-index: 11;
+  }
+
+  body.layout-edit-on .overlay-input {
+    border-color: var(--blue);
+    background: rgba(255,255,255,.96);
+    box-shadow: 0 0 0 3px rgba(255,120,0,.16);
+    cursor: move;
+    touch-action: none;
+    z-index: 30;
+  }
+
+  body.layout-edit-on .overlay-label {
+    opacity: 1;
+    z-index: 31;
+  }
+
+  body.layout-edit-on .overlay-input.dragging {
+    z-index: 200;
+  }
+
+  .result-box {
+    background: var(--result-bg);
+    border: 2px solid var(--result-border);
+    border-radius: 16px;
+    padding: 16px;
+    line-height: 1.7;
+    white-space: pre-line;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .subgrid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .mini-note {
+    font-size: 11px;
+    color: #777;
+    margin-top: 4px;
+  }
+
+  @media (max-width: 760px) {
+    body { padding: 8px; }
+    h1 { font-size: 18px; }
+    .diagram-tabs { top: 68px; }
+    .subgrid { grid-template-columns: 1fr; }
+    .field-sm, .field-md, .field-lg, .field-xl { width: 100%; }
+  }
 </style>
 </head>
-
 <body>
+<div class="app">
 
-<div class="wrapper">
+  <h1>金物配置ツール</h1>
 
-<button id="toggleLayoutEditBtn">配置調整モード: OFF</button>
-
-<div class="diagram-stage">
-  <div class="diagram-canvas" id="canvas">
-
-    <img src="vertical.png">
-
-    <!-- ボックス例 -->
-    <input class="overlay-input" data-link="A" style="left:100px;top:100px;width:100px;height:40px;">
-    <div class="overlay-label" data-for="A" style="left:100px;top:70px;">A</div>
-
-    <input class="overlay-input" data-link="B" style="left:100px;top:200px;width:100px;height:40px;">
-    <div class="overlay-label" data-for="B" style="left:100px;top:170px;">B</div>
-
+  <div class="card top-result">
+    <div class="top-result-title">主要結果</div>
+    <div id="quickResult" class="top-result-value">未入力</div>
   </div>
-</div>
+
+  <div class="diagram-tabs">
+    <button type="button" class="tab-btn active" data-diagram-tab="vertical">縦図</button>
+    <button type="button" class="tab-btn" data-diagram-tab="horizontal">横図</button>
+  </div>
+
+  <div class="card">
+    <div class="section-title">配置調整</div>
+    <div class="row-flex">
+      <div class="field-lg">
+        <button type="button" id="toggleLayoutEditBtn" class="btn-edit">配置調整モード: OFF</button>
+      </div>
+      <div class="field-lg">
+        <button type="button" id="resetLayoutBtn" class="btn-delete">配置を初期化</button>
+      </div>
+      <div class="field-lg">
+        <button type="button" id="exportLayoutBtn" class="btn-add">座標JSONを表示</button>
+      </div>
+      <div class="field-xl">
+        <div class="label">ラベル変更する項目</div>
+        <select id="layoutItemSelect"></select>
+      </div>
+      <div class="field-xl">
+        <div class="label">ラベル名</div>
+        <input id="layoutLabelName">
+      </div>
+      <div class="field-lg">
+        <button type="button" id="saveLabelBtn" class="btn-edit">ラベル名を保存</button>
+      </div>
+    </div>
+    <div class="mini-note">通常時は図面上の色付きBOXを隠します。配置調整モードのときだけ、移動とラベル変更ができます。</div>
+    <div id="layoutMessage" class="message"></div>
+    <div id="layoutExportWrap" style="display:none; margin-top:10px;">
+      <div class="label">現在の座標JSON</div>
+      <textarea id="layoutExportText" readonly></textarea>
+    </div>
+  </div>
+
+  <div id="diagram-vertical" class="diagram-panel active card">
+    <div class="section-title">縦図入力</div>
+    <div class="small">A・B・I・J・G・F・E を図面上で入力します。</div>
+
+    <div class="diagram-stage">
+      <div class="diagram-canvas" id="verticalCanvas" data-base-width="593" data-base-height="1174" style="width:593px; height:1174px;">
+        <img src="vertical.png" alt="縦図" style="width:593px; height:1174px;">
+
+        <label class="overlay-label" data-for="topMituke">A 見付け</label>
+        <input id="topMituke" class="overlay-input" data-link="topMituke" inputmode="decimal">
+
+        <label class="overlay-label" data-for="topGap">B 上隙間</label>
+        <input id="topGap" class="overlay-input" data-link="topGap" inputmode="decimal">
+
+        <label class="overlay-label" data-for="diagramH">I H</label>
+        <input id="diagramH" class="overlay-input" data-link="diagramH" inputmode="decimal">
+
+        <label class="overlay-label" data-for="dh">J DH</label>
+        <input id="dh" class="overlay-input" data-link="dh" inputmode="decimal">
+
+        <label class="overlay-label" data-for="bottomGap">G 下隙間</label>
+        <input id="bottomGap" class="overlay-input" data-link="bottomGap" inputmode="decimal">
+
+        <label class="overlay-label" data-for="bottomSill2">F 沓摺②</label>
+        <input id="bottomSill2" class="overlay-input" data-link="bottomSill2" inputmode="decimal">
+
+        <label class="overlay-label" data-for="bottomSill1">E 沓摺①</label>
+        <input id="bottomSill1" class="overlay-input" data-link="bottomSill1" inputmode="decimal">
+      </div>
+    </div>
+  </div>
+
+  <div id="diagram-horizontal" class="diagram-panel card">
+    <div class="section-title">横図入力</div>
+    <div class="small">S・T・U・DW を図面上で入力します。Uは自動でSと同じになります。</div>
+
+    <div class="diagram-stage">
+      <div class="diagram-canvas" id="horizontalCanvas" data-base-width="986" data-base-height="1174" style="width:986px; height:1174px;">
+        <img src="horizontal.png" alt="横図" style="width:986px; height:1174px;">
+
+        <label class="overlay-label" data-for="parentW">S 親W</label>
+        <input id="parentW" class="overlay-input" data-link="parentW" inputmode="decimal">
+
+        <label class="overlay-label" data-for="meetingInput">T 召合わせ</label>
+        <input id="meetingInput" class="overlay-input" data-link="meetingInput" inputmode="decimal">
+
+        <label class="overlay-label" data-for="flushMirror">U = S</label>
+        <input id="flushMirror" class="overlay-input" data-link="flushMirror" inputmode="decimal" readonly>
+
+        <label class="overlay-label" data-for="dwInput">N DW</label>
+        <input id="dwInput" class="overlay-input" data-link="dwInput" inputmode="decimal">
+      </div>
+    </div>
+  </div>
+
+  <div class="subgrid">
+    <div class="card">
+      <div class="section-title">基準入力</div>
+      <div class="row-flex">
+        <div class="field-md">
+          <div class="label">上基準(C)</div>
+          <input id="topBase" inputmode="decimal">
+        </div>
+        <div class="field-md">
+          <div class="label">下基準</div>
+          <input id="bottomBase" inputmode="decimal">
+        </div>
+        <div class="field-md">
+          <div class="label">ストライク基準</div>
+          <input id="strikeBase" inputmode="decimal">
+        </div>
+        <div class="field-md">
+          <div class="label">枠板厚</div>
+          <input id="frameThickness" inputmode="decimal">
+        </div>
+        <div class="field-md">
+          <div class="label">丁番寸法</div>
+          <input id="hingeValueInput" inputmode="decimal">
+        </div>
+        <div class="field-md">
+          <div class="label">丁番枚数</div>
+          <input id="hingeCount" inputmode="numeric">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">ストライク入力</div>
+      <div class="row-flex">
+        <div class="field-md">
+          <div class="label">下端</div>
+          <input id="strikeOffsetInput" inputmode="decimal">
+        </div>
+        <div class="field-md">
+          <div class="label">高さ</div>
+          <input id="strikeHeightInput" inputmode="decimal">
+        </div>
+        <div class="field-md">
+          <div class="label">厚み</div>
+          <input id="strikeThicknessInput" inputmode="decimal">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">フランス落とし入力</div>
+      <div class="row-flex">
+        <div class="field-md">
+          <div class="label">金物寸法</div>
+          <input id="flushValueInput" inputmode="decimal">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">計算結果</div>
+    <div id="resultText" class="result-box">※ 図面または入力欄に必要項目を入力してください</div>
+  </div>
 
 </div>
 
