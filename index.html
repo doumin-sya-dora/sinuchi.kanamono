@@ -124,8 +124,19 @@
     border-color:#111827;
   }
 
-  .panel{display:none}
-  .panel.active{display:block}
+  .panel{
+    display:none !important;
+  }
+  .panel.active{
+    display:block !important;
+  }
+
+  .diagram-panel{
+    display:none !important;
+  }
+  .diagram-panel.active{
+    display:block !important;
+  }
 
   .row-flex{
     display:flex;
@@ -413,7 +424,6 @@
     <button type="button" class="tab-btn" data-main-tab="hardware">金物管理</button>
   </div>
 
-  <!-- 図面・計算 -->
   <div id="panel-main" class="panel active">
     <div class="card accent-blue">
       <div class="pill blue">最初にここ</div>
@@ -567,7 +577,6 @@
     </div>
   </div>
 
-  <!-- 配置調整 -->
   <div id="panel-layout" class="panel">
     <div class="card accent-yellow">
       <div class="pill orange">配置調整専用</div>
@@ -603,7 +612,6 @@
     </div>
   </div>
 
-  <!-- 金物管理 -->
   <div id="panel-hardware" class="panel">
     <div class="card accent-green">
       <div class="pill green">バックアップ</div>
