@@ -1,10 +1,10 @@
-const LAYOUT_STORAGE_KEY = "kanamonoLayoutPositionsUIV2";
-const HINGE_STORAGE_KEY = "kanamonoHingesUIV2";
-const STRIKE_STORAGE_KEY = "kanamonoStrikesUIV2";
-const FLUSH_STORAGE_KEY = "kanamonoFlushesUIV2";
-const HINGE_SELECTED_KEY = "kanamonoSelectedHingeUIV2";
-const STRIKE_SELECTED_KEY = "kanamonoSelectedStrikeUIV2";
-const FLUSH_SELECTED_KEY = "kanamonoSelectedFlushUIV2";
+const LAYOUT_STORAGE_KEY = "kanamonoLayoutPositionsUIV3";
+const HINGE_STORAGE_KEY = "kanamonoHingesUIV3";
+const STRIKE_STORAGE_KEY = "kanamonoStrikesUIV3";
+const FLUSH_STORAGE_KEY = "kanamonoFlushesUIV3";
+const HINGE_SELECTED_KEY = "kanamonoSelectedHingeUIV3";
+const STRIKE_SELECTED_KEY = "kanamonoSelectedStrikeUIV3";
+const FLUSH_SELECTED_KEY = "kanamonoSelectedFlushUIV3";
 
 let layoutEditMode = false;
 let dragState = null;
@@ -18,11 +18,9 @@ const defaultLayoutPositions = {
   topGap:       { left: 78,  top: 226,  width: 92,  height: 38, labelLeft: 60,  labelTop: 200, labelText: "B 上隙間" },
   diagramH:     { left: 148, top: 495,  width: 92,  height: 38, labelLeft: 182, labelTop: 470, labelText: "I H" },
   dh:           { left: 305, top: 495,  width: 92,  height: 38, labelLeft: 320, labelTop: 470, labelText: "J DH" },
-
   bottomGap:    { left: 72,  top: 688,  width: 116, height: 42, labelLeft: 28,  labelTop: 645, labelText: "G 下隙間" },
   bottomSill2:  { left: 72,  top: 858,  width: 116, height: 42, labelLeft: 28,  labelTop: 815, labelText: "F 沓摺②" },
   bottomSill1:  { left: 128, top: 1033, width: 116, height: 42, labelLeft: 28,  labelTop: 990, labelText: "E 沓摺①" },
-
   parentW:      { left: 282, top: 206,  width: 104, height: 38, labelLeft: 272, labelTop: 180, labelText: "S 親W" },
   meetingInput: { left: 495, top: 206,  width: 78,  height: 38, labelLeft: 492, labelTop: 180, labelText: "T 召合わせ" },
   flushMirror:  { left: 675, top: 206,  width: 104, height: 38, labelLeft: 670, labelTop: 180, labelText: "U = S" },
@@ -235,7 +233,8 @@ function clamp(numValue, min, max){
 function setLayoutEditMode(on){
   layoutEditMode = on;
   document.body.classList.toggle("layout-edit-on", on);
-  document.getElementById("toggleLayoutEditBtn").textContent = "配置調整モード: " + (on ? "ON" : "OFF");
+  const btn = document.getElementById("toggleLayoutEditBtn");
+  if(btn) btn.textContent = "配置調整モード: " + (on ? "ON" : "OFF");
 
   document.querySelectorAll(".overlay-input[data-link]").forEach(el=>{
     if(on){
@@ -281,8 +280,11 @@ function startDragBox(e){
   };
 
   target.classList.add("dragging");
-  document.getElementById("layoutItemSelect").value = target.dataset.link;
-  loadLabelEditorFromSelection();
+  const select = document.getElementById("layoutItemSelect");
+  if(select){
+    select.value = target.dataset.link;
+    loadLabelEditorFromSelection();
+  }
 }
 
 function moveDragBox(e){
@@ -341,6 +343,7 @@ function loadHardwareOptions(){
   const hingeSelect = document.getElementById("hingeSelect");
   const strikeSelect = document.getElementById("strikeSelect");
   const flushSelect = document.getElementById("flushSelect");
+  if(!hingeSelect || !strikeSelect || !flushSelect) return;
 
   const hingeBefore = localStorage.getItem(HINGE_SELECTED_KEY) || "";
   const strikeBefore = localStorage.getItem(STRIKE_SELECTED_KEY) || "";
@@ -434,13 +437,17 @@ function addFlush(){
 }
 
 function refreshSummaryCounts(){
-  document.getElementById("hingeSummaryText").textContent = `丁番一覧（${hinges.length}件）`;
-  document.getElementById("strikeSummaryText").textContent = `ストライク一覧（${strikes.length}件）`;
-  document.getElementById("flushSummaryText").textContent = `フランス落とし一覧（${flushes.length}件）`;
+  const hingeSummaryText = document.getElementById("hingeSummaryText");
+  const strikeSummaryText = document.getElementById("strikeSummaryText");
+  const flushSummaryText = document.getElementById("flushSummaryText");
+  if(hingeSummaryText) hingeSummaryText.textContent = `丁番一覧（${hinges.length}件）`;
+  if(strikeSummaryText) strikeSummaryText.textContent = `ストライク一覧（${strikes.length}件）`;
+  if(flushSummaryText) flushSummaryText.textContent = `フランス落とし一覧（${flushes.length}件）`;
 }
 
 function refreshHingeList(){
   const box = document.getElementById("hingeList");
+  if(!box) return;
   box.innerHTML = "";
   hinges.forEach((item,index)=>{
     const card = document.createElement("div");
@@ -459,6 +466,7 @@ function refreshHingeList(){
 
 function refreshStrikeList(){
   const box = document.getElementById("strikeList");
+  if(!box) return;
   box.innerHTML = "";
   strikes.forEach((item,index)=>{
     const card = document.createElement("div");
@@ -477,6 +485,7 @@ function refreshStrikeList(){
 
 function refreshFlushList(){
   const box = document.getElementById("flushList");
+  if(!box) return;
   box.innerHTML = "";
   flushes.forEach((item,index)=>{
     const card = document.createElement("div");
@@ -502,37 +511,45 @@ function refreshAllLists(){
 
 function startManageEdit(kind,index){
   manageEditing = {type:kind,index};
-  document.getElementById("manageType").value = kind;
+  const manageType = document.getElementById("manageType");
+  const manageName = document.getElementById("manageName");
+  const manageValue1 = document.getElementById("manageValue1");
+  const manageValue2 = document.getElementById("manageValue2");
+  if(manageType) manageType.value = kind;
   clearMessage("manageMessage");
 
   if(kind === "hinge"){
     const item = hinges[index];
-    document.getElementById("manageName").value = item.name;
-    document.getElementById("manageValue1").value = item.value;
-    document.getElementById("manageValue2").value = "";
+    manageName.value = item.name;
+    manageValue1.value = item.value;
+    manageValue2.value = "";
   }
 
   if(kind === "strike"){
     const item = strikes[index];
-    document.getElementById("manageName").value = item.name;
-    document.getElementById("manageValue1").value = item.offset;
-    document.getElementById("manageValue2").value = `${item.height},${item.thickness}`;
+    manageName.value = item.name;
+    manageValue1.value = item.offset;
+    manageValue2.value = `${item.height},${item.thickness}`;
   }
 
   if(kind === "flush"){
     const item = flushes[index];
-    document.getElementById("manageName").value = item.name;
-    document.getElementById("manageValue1").value = item.value;
-    document.getElementById("manageValue2").value = "";
+    manageName.value = item.name;
+    manageValue1.value = item.value;
+    manageValue2.value = "";
   }
 }
 
 function clearManageEdit(){
   manageEditing = {type:null,index:null};
-  document.getElementById("manageType").value = "hinge";
-  document.getElementById("manageName").value = "";
-  document.getElementById("manageValue1").value = "";
-  document.getElementById("manageValue2").value = "";
+  const manageType = document.getElementById("manageType");
+  const manageName = document.getElementById("manageName");
+  const manageValue1 = document.getElementById("manageValue1");
+  const manageValue2 = document.getElementById("manageValue2");
+  if(manageType) manageType.value = "hinge";
+  if(manageName) manageName.value = "";
+  if(manageValue1) manageValue1.value = "";
+  if(manageValue2) manageValue2.value = "";
 }
 
 function saveManageEdit(){
@@ -627,7 +644,6 @@ function importHardwareBackup(file){
   reader.onload = () => {
     try{
       const data = JSON.parse(reader.result);
-
       if(!Array.isArray(data.hinges) || !Array.isArray(data.strikes) || !Array.isArray(data.flushes)){
         throw new Error("format");
       }
@@ -698,7 +714,10 @@ function calc(){
 
   const J = I + 15 - B - F - G;
   setValue("dh", J || 0);
-  document.getElementById("jFormulaPreview").textContent = `J = ${I.toFixed(1)} + 15 - ${B.toFixed(1)} - ${F.toFixed(1)} - ${G.toFixed(1)} = ${J.toFixed(1)}`;
+  const jFormulaPreview = document.getElementById("jFormulaPreview");
+  if(jFormulaPreview){
+    jFormulaPreview.textContent = `J = ${I.toFixed(1)} + 15 - ${B.toFixed(1)} - ${F.toFixed(1)} - ${G.toFixed(1)} = ${J.toFixed(1)}`;
+  }
 
   const topBase = getVal("topBase");
   const bottomBase = getVal("bottomBase");
@@ -736,9 +755,12 @@ function calc(){
 
   const DW = getVal("dwInput");
 
-  localStorage.setItem(HINGE_SELECTED_KEY, document.getElementById("hingeSelect").value);
-  localStorage.setItem(STRIKE_SELECTED_KEY, document.getElementById("strikeSelect").value);
-  localStorage.setItem(FLUSH_SELECTED_KEY, document.getElementById("flushSelect").value);
+  const hingeSelect = document.getElementById("hingeSelect");
+  const strikeSelect = document.getElementById("strikeSelect");
+  const flushSelect = document.getElementById("flushSelect");
+  if(hingeSelect) localStorage.setItem(HINGE_SELECTED_KEY, hingeSelect.value);
+  if(strikeSelect) localStorage.setItem(STRIKE_SELECTED_KEY, strikeSelect.value);
+  if(flushSelect) localStorage.setItem(FLUSH_SELECTED_KEY, flushSelect.value);
 
   let text = "";
 
@@ -787,7 +809,8 @@ function calc(){
   if(DW > 0) text += `DW: ${DW.toFixed(1)} mm\n`;
   else text += "※ DWを入力してください\n";
 
-  document.getElementById("resultText").textContent = text;
+  const resultText = document.getElementById("resultText");
+  if(resultText) resultText.textContent = text;
 
   const quick = [];
   if(topDim > 0) quick.push("上丁番 " + topDim.toFixed(1));
@@ -796,7 +819,8 @@ function calc(){
   if(flushPos > 0) quick.push("フランス " + flushPos.toFixed(1));
   if(DW > 0) quick.push("DW " + DW.toFixed(1));
 
-  document.getElementById("quickResult").textContent = quick.length ? quick.join(" / ") + " mm" : "未入力";
+  const quickResult = document.getElementById("quickResult");
+  if(quickResult) quickResult.textContent = quick.length ? quick.join(" / ") + " mm" : "未入力";
 }
 
 function bindOverlayInputs(){
@@ -808,7 +832,6 @@ function bindOverlayInputs(){
       if(e.target.id === "parentW"){
         setValue("flushMirror", getVal("parentW") || "");
       }
-
       calc();
     });
 
@@ -830,27 +853,53 @@ function bindGeneralInputs(){
   });
 
   ["hingeSelect","strikeSelect","flushSelect"].forEach(id=>{
-    document.getElementById(id).addEventListener("change", calc);
+    const el = document.getElementById(id);
+    if(el) el.addEventListener("change", calc);
   });
 }
 
 function bindTabs(){
-  document.querySelectorAll("[data-main-tab]").forEach(btn=>{
+  const mainTabButtons = document.querySelectorAll("[data-main-tab]");
+  const mainPanels = {
+    main: document.getElementById("panel-main"),
+    layout: document.getElementById("panel-layout"),
+    hardware: document.getElementById("panel-hardware")
+  };
+
+  mainTabButtons.forEach(btn=>{
     btn.addEventListener("click", ()=>{
-      document.querySelectorAll("[data-main-tab]").forEach(b=>b.classList.remove("active"));
-      document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+      const key = btn.dataset.mainTab;
+
+      mainTabButtons.forEach(b=>b.classList.remove("active"));
+      Object.values(mainPanels).forEach(panel=>{
+        if(panel) panel.classList.remove("active");
+      });
+
       btn.classList.add("active");
-      document.getElementById(`panel-${btn.dataset.mainTab}`).classList.add("active");
+      if(mainPanels[key]) mainPanels[key].classList.add("active");
+
       setTimeout(fitAllDiagramCanvases, 0);
     });
   });
 
-  document.querySelectorAll("[data-diagram-tab]").forEach(btn=>{
+  const diagramTabButtons = document.querySelectorAll("[data-diagram-tab]");
+  const diagramPanels = {
+    vertical: document.getElementById("diagram-vertical"),
+    horizontal: document.getElementById("diagram-horizontal")
+  };
+
+  diagramTabButtons.forEach(btn=>{
     btn.addEventListener("click", ()=>{
-      document.querySelectorAll("[data-diagram-tab]").forEach(b=>b.classList.remove("active"));
-      document.querySelectorAll(".diagram-panel").forEach(p=>p.classList.remove("active"));
+      const key = btn.dataset.diagramTab;
+
+      diagramTabButtons.forEach(b=>b.classList.remove("active"));
+      Object.values(diagramPanels).forEach(panel=>{
+        if(panel) panel.classList.remove("active");
+      });
+
       btn.classList.add("active");
-      document.getElementById(`diagram-${btn.dataset.diagramTab}`).classList.add("active");
+      if(diagramPanels[key]) diagramPanels[key].classList.add("active");
+
       setTimeout(fitAllDiagramCanvases, 0);
     });
   });
@@ -861,13 +910,21 @@ function bindLayoutEditor(){
   populateLayoutItemSelect();
   loadLabelEditorFromSelection();
 
-  document.getElementById("toggleLayoutEditBtn").addEventListener("click", ()=>{
-    setLayoutEditMode(!layoutEditMode);
-  });
-  document.getElementById("resetLayoutBtn").addEventListener("click", resetLayoutPositions);
-  document.getElementById("exportLayoutBtn").addEventListener("click", exportLayoutPositions);
-  document.getElementById("saveLabelBtn").addEventListener("click", saveLabelNameFromEditor);
-  document.getElementById("layoutItemSelect").addEventListener("change", loadLabelEditorFromSelection);
+  const toggleLayoutEditBtn = document.getElementById("toggleLayoutEditBtn");
+  const resetLayoutBtn = document.getElementById("resetLayoutBtn");
+  const exportLayoutBtn = document.getElementById("exportLayoutBtn");
+  const saveLabelBtn = document.getElementById("saveLabelBtn");
+  const layoutItemSelect = document.getElementById("layoutItemSelect");
+
+  if(toggleLayoutEditBtn){
+    toggleLayoutEditBtn.addEventListener("click", ()=>{
+      setLayoutEditMode(!layoutEditMode);
+    });
+  }
+  if(resetLayoutBtn) resetLayoutBtn.addEventListener("click", resetLayoutPositions);
+  if(exportLayoutBtn) exportLayoutBtn.addEventListener("click", exportLayoutPositions);
+  if(saveLabelBtn) saveLabelBtn.addEventListener("click", saveLabelNameFromEditor);
+  if(layoutItemSelect) layoutItemSelect.addEventListener("change", loadLabelEditorFromSelection);
 
   document.addEventListener("mousedown", startDragBox);
   document.addEventListener("touchstart", startDragBox, {passive:false});
@@ -878,21 +935,33 @@ function bindLayoutEditor(){
 }
 
 function bindHardwareButtons(){
-  document.getElementById("addHingeBtn").addEventListener("click", addHinge);
-  document.getElementById("addStrikeBtn").addEventListener("click", addStrike);
-  document.getElementById("addFlushBtn").addEventListener("click", addFlush);
+  const addHingeBtn = document.getElementById("addHingeBtn");
+  const addStrikeBtn = document.getElementById("addStrikeBtn");
+  const addFlushBtn = document.getElementById("addFlushBtn");
+  const manageSaveBtn = document.getElementById("manageSaveBtn");
+  const manageCancelBtn = document.getElementById("manageCancelBtn");
+  const backupExportBtn = document.getElementById("backupExportBtn");
+  const backupImportFile = document.getElementById("backupImportFile");
 
-  document.getElementById("manageSaveBtn").addEventListener("click", saveManageEdit);
-  document.getElementById("manageCancelBtn").addEventListener("click", ()=>{
-    clearManageEdit();
-    clearMessage("manageMessage");
-  });
+  if(addHingeBtn) addHingeBtn.addEventListener("click", addHinge);
+  if(addStrikeBtn) addStrikeBtn.addEventListener("click", addStrike);
+  if(addFlushBtn) addFlushBtn.addEventListener("click", addFlush);
 
-  document.getElementById("backupExportBtn").addEventListener("click", exportHardwareBackup);
-  document.getElementById("backupImportFile").addEventListener("change", (e)=>{
-    importHardwareBackup(e.target.files[0]);
-    e.target.value = "";
-  });
+  if(manageSaveBtn) manageSaveBtn.addEventListener("click", saveManageEdit);
+  if(manageCancelBtn){
+    manageCancelBtn.addEventListener("click", ()=>{
+      clearManageEdit();
+      clearMessage("manageMessage");
+    });
+  }
+
+  if(backupExportBtn) backupExportBtn.addEventListener("click", exportHardwareBackup);
+  if(backupImportFile){
+    backupImportFile.addEventListener("change", (e)=>{
+      importHardwareBackup(e.target.files[0]);
+      e.target.value = "";
+    });
+  }
 
   document.addEventListener("click", e=>{
     const btn = e.target.closest("button[data-action]");
