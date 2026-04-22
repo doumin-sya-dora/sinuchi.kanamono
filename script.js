@@ -33,12 +33,16 @@ const defaultHinges = [
 ];
 
 const defaultStrikes = [
-  { name: "LA", offset: 22.5, height: 110, thickness: 2.5, isDefault: true }
+  { name: "LA", offset: 22.5, height: 110, thickness: 2.5, isDefault: true },
+  { name: "LY", offset: 18.5, height: 70, thickness: 1.8, isDefault: true },
+  { name: "LX", offset: 15.5, height: 96, thickness: 2.4, isDefault: true },
+  { name: "HD", offset: 76, height: 96, thickness: 2, isDefault: true }
 ];
 
 const defaultFlushes = [
   { name: "DE6VN", value: 18.5, isDefault: true },
-  { name: "DC800", value: 20.5, isDefault: true }
+  { name: "DC800", value: 20.5, isDefault: true },
+  { name: "DC-825(M)", value: 18.5, isDefault: true }
 ];
 
 function cloneDeep(obj){
@@ -183,16 +187,23 @@ function refreshLayoutItemSelectLabels(){
 }
 
 function loadLabelEditorFromSelection(){
-  const key = document.getElementById("layoutItemSelect").value;
+  const select = document.getElementById("layoutItemSelect");
+  if(!select) return;
+  const key = select.value;
   const target = document.querySelector(`.overlay-input[data-link="${key}"]`);
   if(!target) return;
   const label = findOverlayLabel(target);
-  document.getElementById("layoutLabelName").value = label ? label.textContent : "";
+  const input = document.getElementById("layoutLabelName");
+  if(input) input.value = label ? label.textContent : "";
 }
 
 function saveLabelNameFromEditor(){
-  const key = document.getElementById("layoutItemSelect").value;
-  const newName = document.getElementById("layoutLabelName").value.trim();
+  const select = document.getElementById("layoutItemSelect");
+  const nameInput = document.getElementById("layoutLabelName");
+  if(!select || !nameInput) return;
+
+  const key = select.value;
+  const newName = nameInput.value.trim();
   if(!key || !newName) return showMessage("layoutMessage","項目とラベル名を確認してください","warn");
 
   const target = document.querySelector(`.overlay-input[data-link="${key}"]`);
@@ -208,8 +219,11 @@ function saveLabelNameFromEditor(){
 
 function exportLayoutPositions(){
   const text = JSON.stringify(getCurrentLayoutPositions(), null, 2);
-  document.getElementById("layoutExportWrap").style.display = "block";
-  document.getElementById("layoutExportText").value = text;
+  const wrap = document.getElementById("layoutExportWrap");
+  const area = document.getElementById("layoutExportText");
+  if(wrap) wrap.style.display = "block";
+  if(area) area.value = text;
+
   navigator.clipboard.writeText(text).then(()=>{
     showMessage("layoutMessage","座標JSONをコピーしました","ok");
   }).catch(()=>{
@@ -383,8 +397,12 @@ function getSelectedFlush(){
 
 function addHinge(){
   clearMessage("hingeMessage");
-  const name = document.getElementById("newHingeName").value.trim();
-  const value = num(document.getElementById("newHingeValue").value);
+  const nameInput = document.getElementById("newHingeName");
+  const valueInput = document.getElementById("newHingeValue");
+  if(!nameInput || !valueInput) return;
+
+  const name = nameInput.value.trim();
+  const value = num(valueInput.value);
   if(!name || !value) return showMessage("hingeMessage","名前と値を入力してください","warn");
   if(hinges.some(x=>x.name.toLowerCase() === name.toLowerCase())) return showMessage("hingeMessage","同じ名前があります","warn");
 
@@ -392,18 +410,25 @@ function addHinge(){
   saveHardware();
   loadHardwareOptions();
   refreshAllLists();
-  document.getElementById("newHingeName").value = "";
-  document.getElementById("newHingeValue").value = "";
+  nameInput.value = "";
+  valueInput.value = "";
   showMessage("hingeMessage","追加しました","ok");
   calc();
 }
 
 function addStrike(){
   clearMessage("strikeMessage");
-  const name = document.getElementById("newStrikeName").value.trim();
-  const offset = num(document.getElementById("newStrikeOffset").value);
-  const height = num(document.getElementById("newStrikeHeight").value);
-  const thickness = num(document.getElementById("newStrikeThickness").value);
+  const nameInput = document.getElementById("newStrikeName");
+  const offsetInput = document.getElementById("newStrikeOffset");
+  const heightInput = document.getElementById("newStrikeHeight");
+  const thicknessInput = document.getElementById("newStrikeThickness");
+  if(!nameInput || !offsetInput || !heightInput || !thicknessInput) return;
+
+  const name = nameInput.value.trim();
+  const offset = num(offsetInput.value);
+  const height = num(heightInput.value);
+  const thickness = num(thicknessInput.value);
+
   if(!name || !offset || !height || !thickness) return showMessage("strikeMessage","全部入力してください","warn");
   if(strikes.some(x=>x.name.toLowerCase() === name.toLowerCase())) return showMessage("strikeMessage","同じ名前があります","warn");
 
@@ -411,18 +436,23 @@ function addStrike(){
   saveHardware();
   loadHardwareOptions();
   refreshAllLists();
-  document.getElementById("newStrikeName").value = "";
-  document.getElementById("newStrikeOffset").value = "";
-  document.getElementById("newStrikeHeight").value = "";
-  document.getElementById("newStrikeThickness").value = "";
+  nameInput.value = "";
+  offsetInput.value = "";
+  heightInput.value = "";
+  thicknessInput.value = "";
   showMessage("strikeMessage","追加しました","ok");
   calc();
 }
 
 function addFlush(){
   clearMessage("flushMessage");
-  const name = document.getElementById("newFlushName").value.trim();
-  const value = num(document.getElementById("newFlushValue").value);
+  const nameInput = document.getElementById("newFlushName");
+  const valueInput = document.getElementById("newFlushValue");
+  if(!nameInput || !valueInput) return;
+
+  const name = nameInput.value.trim();
+  const value = num(valueInput.value);
+
   if(!name || !value) return showMessage("flushMessage","名前と値を入力してください","warn");
   if(flushes.some(x=>x.name.toLowerCase() === name.toLowerCase())) return showMessage("flushMessage","同じ名前があります","warn");
 
@@ -430,8 +460,8 @@ function addFlush(){
   saveHardware();
   loadHardwareOptions();
   refreshAllLists();
-  document.getElementById("newFlushName").value = "";
-  document.getElementById("newFlushValue").value = "";
+  nameInput.value = "";
+  valueInput.value = "";
   showMessage("flushMessage","追加しました","ok");
   calc();
 }
@@ -520,23 +550,23 @@ function startManageEdit(kind,index){
 
   if(kind === "hinge"){
     const item = hinges[index];
-    manageName.value = item.name;
-    manageValue1.value = item.value;
-    manageValue2.value = "";
+    if(manageName) manageName.value = item.name;
+    if(manageValue1) manageValue1.value = item.value;
+    if(manageValue2) manageValue2.value = "";
   }
 
   if(kind === "strike"){
     const item = strikes[index];
-    manageName.value = item.name;
-    manageValue1.value = item.offset;
-    manageValue2.value = `${item.height},${item.thickness}`;
+    if(manageName) manageName.value = item.name;
+    if(manageValue1) manageValue1.value = item.offset;
+    if(manageValue2) manageValue2.value = `${item.height},${item.thickness}`;
   }
 
   if(kind === "flush"){
     const item = flushes[index];
-    manageName.value = item.name;
-    manageValue1.value = item.value;
-    manageValue2.value = "";
+    if(manageName) manageName.value = item.name;
+    if(manageValue1) manageValue1.value = item.value;
+    if(manageValue2) manageValue2.value = "";
   }
 }
 
@@ -714,6 +744,7 @@ function calc(){
 
   const J = I + 15 - B - F - G;
   setValue("dh", J || 0);
+
   const jFormulaPreview = document.getElementById("jFormulaPreview");
   if(jFormulaPreview){
     jFormulaPreview.textContent = `J = ${I.toFixed(1)} + 15 - ${B.toFixed(1)} - ${F.toFixed(1)} - ${G.toFixed(1)} = ${J.toFixed(1)}`;
@@ -869,15 +900,12 @@ function bindTabs(){
   mainTabButtons.forEach(btn=>{
     btn.addEventListener("click", ()=>{
       const key = btn.dataset.mainTab;
-
       mainTabButtons.forEach(b=>b.classList.remove("active"));
       Object.values(mainPanels).forEach(panel=>{
         if(panel) panel.classList.remove("active");
       });
-
       btn.classList.add("active");
       if(mainPanels[key]) mainPanels[key].classList.add("active");
-
       setTimeout(fitAllDiagramCanvases, 0);
     });
   });
@@ -891,15 +919,12 @@ function bindTabs(){
   diagramTabButtons.forEach(btn=>{
     btn.addEventListener("click", ()=>{
       const key = btn.dataset.diagramTab;
-
       diagramTabButtons.forEach(b=>b.classList.remove("active"));
       Object.values(diagramPanels).forEach(panel=>{
         if(panel) panel.classList.remove("active");
       });
-
       btn.classList.add("active");
       if(diagramPanels[key]) diagramPanels[key].classList.add("active");
-
       setTimeout(fitAllDiagramCanvases, 0);
     });
   });
