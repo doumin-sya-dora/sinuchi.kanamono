@@ -5,345 +5,395 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>金物配置ツール 完全版</title>
 <style>
-  :root {
-    --bg: #f3f3f3;
-    --card: #ffffff;
-    --border: #d8d8d8;
-    --text: #222;
-    --sub: #666;
-    --blue: #1698f3;
-    --orange: #ff8a00;
-    --radius: 14px;
-    --shadow: 0 1px 4px rgba(0,0,0,.06);
-    --result-bg: #fff9df;
-    --result-border: #e0b63f;
+  :root{
+    --bg:#eef3f8;
+    --card:#ffffff;
+    --line:#d7dee7;
+    --text:#1f2937;
+    --sub:#6b7280;
+    --blue:#1d8cf8;
+    --blue-soft:#e8f3ff;
+    --green:#16a34a;
+    --green-soft:#ebfff2;
+    --purple:#7c3aed;
+    --purple-soft:#f2ebff;
+    --orange:#ea580c;
+    --orange-soft:#fff2e8;
+    --yellow:#f59e0b;
+    --yellow-soft:#fff8df;
+    --danger:#dc2626;
+    --danger-soft:#fff1f1;
+    --radius:16px;
+    --shadow:0 8px 24px rgba(15,23,42,.08);
   }
 
-  * { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; }
-
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
-    padding: 10px;
-  }
-
-  .app {
-    max-width: 1000px;
-    margin: 0 auto;
-  }
-
-  h1 {
-    margin: 4px 0 12px;
-    text-align: center;
-    font-size: 20px;
-  }
-
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    padding: 12px;
-    margin-bottom: 12px;
-  }
-
-  .section-title {
-    font-size: 15px;
-    font-weight: 700;
-    margin-bottom: 10px;
-  }
-
-  .small {
-    font-size: 12px;
-    color: var(--sub);
-    line-height: 1.5;
-    margin-bottom: 10px;
-  }
-
-  .top-result {
-    position: sticky;
-    top: 0;
-    z-index: 40;
-    background: rgba(255,255,255,.95);
-    backdrop-filter: blur(8px);
-  }
-
-  .top-result-title {
-    font-size: 12px;
-    color: var(--sub);
-    margin-bottom: 4px;
-  }
-
-  .top-result-value {
-    font-size: 14px;
-    font-weight: 700;
-    line-height: 1.5;
-  }
-
-  .diagram-tabs {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    position: sticky;
-    top: 72px;
-    z-index: 35;
-    background: var(--bg);
-    padding-bottom: 8px;
-  }
-
-  .tab-btn {
-    min-height: 42px;
-    border: 1px solid #cfcfcf;
-    border-radius: 12px;
-    background: #fff;
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
-  }
-
-  .tab-btn.active {
-    background: #222;
-    color: #fff;
-    border-color: #222;
-  }
-
-  .diagram-panel { display: none; }
-  .diagram-panel.active { display: block; }
-
-  .row-flex {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 6px;
-    align-items: end;
-  }
-
-  .field-sm { width: 96px; }
-  .field-md { width: 130px; }
-  .field-lg { width: 200px; }
-  .field-xl { width: 260px; }
-  .field-full { width: 100%; }
-
-  .label {
-    font-size: 12px;
-    margin-bottom: 4px;
-    color: #444;
-    padding-left: 2px;
-  }
-
-  input, select, button, textarea {
-    width: 100%;
-    min-height: 40px;
-    border-radius: 10px;
-    border: 1px solid #c9c9c9;
-    font-size: 16px;
-    padding: 6px 8px;
-    background: #fff;
-    appearance: none;
-    -webkit-appearance: none;
-  }
-
-  textarea {
-    min-height: 120px;
-    resize: vertical;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 13px;
-  }
-
-  input[readonly] {
-    background: #f5f5f5;
-  }
-
-  button {
-    cursor: pointer;
-    font-weight: 700;
-  }
-
-  .btn-add { background: #f5fff5; }
-  .btn-delete { background: #fff7f7; }
-  .btn-edit { background: #f4f8ff; }
-
-  .message {
-    margin-top: 8px;
-    padding: 8px;
-    border-radius: 8px;
-    font-size: 12px;
-    text-align: center;
-    display: none;
-  }
-
-  .message.ok { background:#e8f5e9; }
-  .message.warn { background:#fff3e0; }
-  .message.info { background:#e3f2fd; }
-
-  .diagram-stage {
-    position: relative;
-    width: 100%;
-    overflow: hidden;
-    border-radius: 12px;
-    background: #fff;
-  }
-
-  .diagram-canvas {
-    position: relative;
-    transform-origin: top left;
-  }
-
-  .diagram-canvas img {
-    display: block;
-    position: absolute;
-    inset: 0;
-    user-select: none;
-    -webkit-user-drag: none;
-    pointer-events: none;
-  }
-
-  .overlay-input {
-    position: absolute;
-    border: 2px solid transparent;
-    border-radius: 4px;
-    background: transparent;
-    color: #111;
-    text-align: center;
-    font-size: 16px;
-    font-weight: 700;
-    padding: 0 4px;
-    outline: none;
-    z-index: 10;
-  }
-
-  .overlay-label {
-    position: absolute;
-    font-size: 11px;
-    font-weight: 700;
-    color: #222;
-    background: rgba(255,255,255,.88);
-    padding: 1px 4px;
-    border-radius: 6px;
-    pointer-events: none;
-    white-space: nowrap;
-    opacity: 0;
-    z-index: 11;
-  }
-
-  body.layout-edit-on .overlay-input {
-    border-color: var(--blue);
-    background: rgba(255,255,255,.96);
-    box-shadow: 0 0 0 3px rgba(255,120,0,.16);
-    cursor: move;
-    touch-action: none;
-    z-index: 30;
-  }
-
-  body.layout-edit-on .overlay-label {
-    opacity: 1;
-    z-index: 31;
-  }
-
-  body.layout-edit-on .overlay-input.dragging {
-    z-index: 200;
-  }
-
-  .subgrid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-    margin-bottom: 12px;
-  }
-
-  .result-box {
-    background: var(--result-bg);
-    border: 2px solid var(--result-border);
-    border-radius: 16px;
-    padding: 16px;
-    line-height: 1.7;
-    white-space: pre-line;
-    font-size: 15px;
-    font-weight: 600;
-  }
-
-  .manage-list {
-    display: grid;
-    gap: 10px;
-  }
-
-  .item-card {
-    background:#fff;
-    border:1px solid #ddd;
-    border-radius:12px;
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;
+    background:linear-gradient(180deg,#f6f9fc 0%, #eef3f8 100%);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic UI",sans-serif;
     padding:10px;
   }
 
-  .item-title {
-    font-size:14px;
-    font-weight:700;
-    margin-bottom:8px;
+  .app{
+    max-width:1100px;
+    margin:0 auto;
   }
 
-  .item-meta {
-    font-size:13px;
-    color:#555;
+  h1{
+    margin:6px 0 14px;
+    text-align:center;
+    font-size:22px;
+    letter-spacing:.02em;
+  }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:14px;
+    margin-bottom:12px;
+  }
+
+  .accent-blue{background:linear-gradient(180deg,#fff 0%, var(--blue-soft) 100%)}
+  .accent-green{background:linear-gradient(180deg,#fff 0%, var(--green-soft) 100%)}
+  .accent-purple{background:linear-gradient(180deg,#fff 0%, var(--purple-soft) 100%)}
+  .accent-orange{background:linear-gradient(180deg,#fff 0%, var(--orange-soft) 100%)}
+  .accent-yellow{background:linear-gradient(180deg,#fff 0%, var(--yellow-soft) 100%)}
+
+  .section-title{
+    font-size:16px;
+    font-weight:800;
+    margin-bottom:10px;
+  }
+
+  .small{
+    font-size:12px;
+    color:var(--sub);
+    line-height:1.6;
+    margin-bottom:10px;
+  }
+
+  .top-result{
+    position:sticky;
+    top:0;
+    z-index:50;
+    background:rgba(255,255,255,.92);
+    backdrop-filter:blur(10px);
+  }
+
+  .top-result-title{
+    font-size:12px;
+    color:var(--sub);
+    margin-bottom:4px;
+  }
+
+  .top-result-value{
+    font-size:16px;
+    font-weight:800;
     line-height:1.5;
+  }
+
+  .main-tabs,
+  .diagram-tabs{
+    display:grid;
+    gap:8px;
+    margin-bottom:12px;
+  }
+
+  .main-tabs{grid-template-columns:repeat(3,1fr)}
+  .diagram-tabs{grid-template-columns:repeat(2,1fr)}
+
+  .tab-btn{
+    min-height:46px;
+    border:1px solid #cfd8e3;
+    border-radius:14px;
+    background:#fff;
+    font-size:15px;
+    font-weight:800;
+    cursor:pointer;
+    color:#334155;
+  }
+
+  .tab-btn.active{
+    background:#111827;
+    color:#fff;
+    border-color:#111827;
+  }
+
+  .panel{display:none}
+  .panel.active{display:block}
+
+  .row-flex{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px 8px;
+    align-items:end;
+  }
+
+  .field-sm{width:110px}
+  .field-md{width:150px}
+  .field-lg{width:220px}
+  .field-xl{width:280px}
+  .field-full{width:100%}
+
+  .label{
+    font-size:12px;
+    margin-bottom:5px;
+    color:#475569;
+    padding-left:2px;
+    font-weight:700;
+  }
+
+  input,select,button,textarea{
+    width:100%;
+    min-height:44px;
+    border-radius:12px;
+    border:1px solid #cbd5e1;
+    font-size:16px;
+    padding:8px 10px;
+    background:#fff;
+    color:#111827;
+    appearance:none;
+    -webkit-appearance:none;
+  }
+
+  textarea{
+    min-height:120px;
+    resize:vertical;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:13px;
+  }
+
+  input[readonly]{
+    background:#f8fafc;
+  }
+
+  button{
+    cursor:pointer;
+    font-weight:800;
+  }
+
+  .btn-primary{background:#111827;color:#fff;border-color:#111827}
+  .btn-edit{background:#eef6ff}
+  .btn-add{background:#effcf4}
+  .btn-delete{background:#fff2f2}
+  .btn-warn{background:#fff7e8}
+
+  .pill{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:5px 10px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:800;
     margin-bottom:8px;
   }
 
-  .item-actions {
+  .pill.blue{background:var(--blue-soft);color:#0f4c92}
+  .pill.green{background:var(--green-soft);color:#176534}
+  .pill.purple{background:var(--purple-soft);color:#5b21b6}
+  .pill.orange{background:var(--orange-soft);color:#9a3412}
+
+  .message{
+    margin-top:8px;
+    padding:8px;
+    border-radius:10px;
+    font-size:12px;
+    text-align:center;
+    display:none;
+  }
+  .message.ok{background:#e8f7ec}
+  .message.warn{background:#fff3df}
+  .message.info{background:#e7f1ff}
+
+  .subgrid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:12px;
+    margin-bottom:12px;
+  }
+
+  .result-box{
+    background:linear-gradient(180deg,#fffdf2 0%, #fff6cf 100%);
+    border:2px solid #efc34d;
+    border-radius:18px;
+    padding:16px;
+    line-height:1.75;
+    white-space:pre-line;
+    font-size:15px;
+    font-weight:700;
+  }
+
+  .mini-note{
+    font-size:11px;
+    color:#64748b;
+    margin-top:5px;
+    line-height:1.5;
+  }
+
+  .formula-box{
+    border:1px dashed #cbd5e1;
+    border-radius:14px;
+    padding:12px;
+    background:#f8fbff;
+  }
+
+  .formula-main{
+    font-size:18px;
+    font-weight:900;
+    letter-spacing:.02em;
+    margin-bottom:6px;
+  }
+
+  .formula-sub{
+    font-size:13px;
+    color:#64748b;
+  }
+
+  .diagram-stage{
+    position:relative;
+    width:100%;
+    overflow:hidden;
+    border-radius:14px;
+    background:#fff;
+    border:1px solid #dbe4ee;
+  }
+
+  .diagram-canvas{
+    position:relative;
+    transform-origin:top left;
+  }
+
+  .diagram-canvas img{
+    display:block;
+    position:absolute;
+    inset:0;
+    user-select:none;
+    -webkit-user-drag:none;
+    pointer-events:none;
+  }
+
+  .overlay-input{
+    position:absolute;
+    border:2px solid transparent;
+    border-radius:6px;
+    background:transparent;
+    color:#111;
+    text-align:center;
+    font-size:16px;
+    font-weight:800;
+    padding:0 4px;
+    outline:none;
+    z-index:10;
+  }
+
+  .overlay-label{
+    position:absolute;
+    font-size:11px;
+    font-weight:800;
+    color:#111827;
+    background:rgba(255,255,255,.92);
+    padding:2px 6px;
+    border-radius:999px;
+    pointer-events:none;
+    white-space:nowrap;
+    opacity:0;
+    z-index:11;
+    border:1px solid #dbe4ee;
+  }
+
+  body.layout-edit-on .overlay-input{
+    border-color:var(--blue);
+    background:rgba(255,255,255,.96);
+    box-shadow:0 0 0 4px rgba(29,140,248,.13);
+    cursor:move;
+    touch-action:none;
+    z-index:30;
+  }
+
+  body.layout-edit-on .overlay-label{
+    opacity:1;
+    z-index:31;
+  }
+
+  body.layout-edit-on .overlay-input.dragging{
+    z-index:200;
+  }
+
+  .manage-list{
+    display:grid;
+    gap:10px;
+  }
+
+  .item-card{
+    background:#fff;
+    border:1px solid #dbe4ee;
+    border-radius:14px;
+    padding:10px;
+  }
+
+  .item-title{
+    font-size:14px;
+    font-weight:800;
+    margin-bottom:6px;
+  }
+
+  .item-meta{
+    font-size:13px;
+    color:#64748b;
+    line-height:1.6;
+    margin-bottom:8px;
+  }
+
+  .item-actions{
     display:grid;
     grid-template-columns:1fr 1fr;
     gap:8px;
   }
 
-  .badge-default {
+  .badge-default{
     display:inline-block;
     margin-left:6px;
     padding:2px 8px;
     border-radius:999px;
-    background:#f0f0f0;
+    background:#eef2f7;
     font-size:11px;
-    color:#666;
+    color:#64748b;
     vertical-align:middle;
   }
 
-  details.manage-section {
-    background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 14px;
-    box-shadow: var(--shadow);
-    margin-bottom: 12px;
-    overflow: hidden;
+  details.manage-section{
+    background:#fff;
+    border:1px solid #dbe4ee;
+    border-radius:14px;
+    box-shadow:var(--shadow);
+    margin-bottom:12px;
+    overflow:hidden;
   }
 
-  details.manage-section summary {
-    list-style: none;
-    cursor: pointer;
-    padding: 12px 10px;
-    font-size: 14px;
-    font-weight: 700;
-    background: #fafafa;
-    border-bottom: 1px solid #eee;
+  details.manage-section summary{
+    list-style:none;
+    cursor:pointer;
+    padding:12px 10px;
+    font-size:14px;
+    font-weight:800;
+    background:#f8fafc;
+    border-bottom:1px solid #eef2f7;
   }
+  details.manage-section summary::-webkit-details-marker{display:none}
+  details.manage-section[open] summary{background:#f1f5f9}
+  .manage-section-body{padding:10px}
 
-  details.manage-section summary::-webkit-details-marker { display:none; }
-  details.manage-section[open] summary { background:#f3f3f3; }
-
-  .manage-section-body {
-    padding: 10px;
-  }
-
-  .mini-note {
-    font-size: 11px;
-    color: #777;
-    margin-top: 4px;
-  }
-
-  @media (max-width: 760px) {
-    body { padding: 8px; }
-    h1 { font-size: 18px; }
-    .diagram-tabs { top: 68px; }
-    .subgrid { grid-template-columns: 1fr; }
-    .field-sm, .field-md, .field-lg, .field-xl { width: 100%; }
+  @media (max-width: 860px){
+    .subgrid{grid-template-columns:1fr}
+    .main-tabs{grid-template-columns:1fr}
+    .diagram-tabs{grid-template-columns:1fr 1fr}
+    .field-sm,.field-md,.field-lg,.field-xl{width:100%}
   }
 </style>
 </head>
@@ -357,100 +407,16 @@
     <div id="quickResult" class="top-result-value">未入力</div>
   </div>
 
-  <div class="diagram-tabs">
-    <button type="button" class="tab-btn active" data-diagram-tab="vertical">縦図</button>
-    <button type="button" class="tab-btn" data-diagram-tab="horizontal">横図</button>
+  <div class="main-tabs">
+    <button type="button" class="tab-btn active" data-main-tab="main">図面・計算</button>
+    <button type="button" class="tab-btn" data-main-tab="layout">配置調整</button>
+    <button type="button" class="tab-btn" data-main-tab="hardware">金物管理</button>
   </div>
 
-  <div class="card">
-    <div class="section-title">配置調整</div>
-    <div class="row-flex">
-      <div class="field-lg">
-        <button type="button" id="toggleLayoutEditBtn" class="btn-edit">配置調整モード: OFF</button>
-      </div>
-      <div class="field-lg">
-        <button type="button" id="resetLayoutBtn" class="btn-delete">配置を初期化</button>
-      </div>
-      <div class="field-lg">
-        <button type="button" id="exportLayoutBtn" class="btn-add">座標JSONを表示</button>
-      </div>
-      <div class="field-xl">
-        <div class="label">ラベル変更する項目</div>
-        <select id="layoutItemSelect"></select>
-      </div>
-      <div class="field-xl">
-        <div class="label">ラベル名</div>
-        <input id="layoutLabelName">
-      </div>
-      <div class="field-lg">
-        <button type="button" id="saveLabelBtn" class="btn-edit">ラベル名を保存</button>
-      </div>
-    </div>
-    <div class="mini-note">通常時は図面上の色付きBOXを隠します。配置調整モードのときだけ、移動とラベル変更ができます。</div>
-    <div id="layoutMessage" class="message"></div>
-    <div id="layoutExportWrap" style="display:none; margin-top:10px;">
-      <div class="label">現在の座標JSON</div>
-      <textarea id="layoutExportText" readonly></textarea>
-    </div>
-  </div>
-
-  <div id="diagram-vertical" class="diagram-panel active card">
-    <div class="section-title">縦図入力</div>
-    <div class="small">A・B・I・J・G・F・E を図面上で入力します。</div>
-
-    <div class="diagram-stage">
-      <div class="diagram-canvas" id="verticalCanvas" data-base-width="593" data-base-height="1174" style="width:593px; height:1174px;">
-        <img src="vertical.png" alt="縦図" style="width:593px; height:1174px;">
-
-        <label class="overlay-label" data-for="topMituke">A 見付け</label>
-        <input id="topMituke" class="overlay-input" data-link="topMituke" inputmode="decimal">
-
-        <label class="overlay-label" data-for="topGap">B 上隙間</label>
-        <input id="topGap" class="overlay-input" data-link="topGap" inputmode="decimal">
-
-        <label class="overlay-label" data-for="diagramH">I H</label>
-        <input id="diagramH" class="overlay-input" data-link="diagramH" inputmode="decimal">
-
-        <label class="overlay-label" data-for="dh">J DH</label>
-        <input id="dh" class="overlay-input" data-link="dh" inputmode="decimal">
-
-        <label class="overlay-label" data-for="bottomGap">G 下隙間</label>
-        <input id="bottomGap" class="overlay-input" data-link="bottomGap" inputmode="decimal">
-
-        <label class="overlay-label" data-for="bottomSill2">F 沓摺②</label>
-        <input id="bottomSill2" class="overlay-input" data-link="bottomSill2" inputmode="decimal">
-
-        <label class="overlay-label" data-for="bottomSill1">E 沓摺①</label>
-        <input id="bottomSill1" class="overlay-input" data-link="bottomSill1" inputmode="decimal">
-      </div>
-    </div>
-  </div>
-
-  <div id="diagram-horizontal" class="diagram-panel card">
-    <div class="section-title">横図入力</div>
-    <div class="small">S・T・U・DW を図面上で入力します。Uは自動でSと同じになります。</div>
-
-    <div class="diagram-stage">
-      <div class="diagram-canvas" id="horizontalCanvas" data-base-width="986" data-base-height="1174" style="width:986px; height:1174px;">
-        <img src="horizontal.png" alt="横図" style="width:986px; height:1174px;">
-
-        <label class="overlay-label" data-for="parentW">S 親W</label>
-        <input id="parentW" class="overlay-input" data-link="parentW" inputmode="decimal">
-
-        <label class="overlay-label" data-for="meetingInput">T 召合わせ</label>
-        <input id="meetingInput" class="overlay-input" data-link="meetingInput" inputmode="decimal">
-
-        <label class="overlay-label" data-for="flushMirror">U = S</label>
-        <input id="flushMirror" class="overlay-input" data-link="flushMirror" inputmode="decimal" readonly>
-
-        <label class="overlay-label" data-for="dwInput">N DW</label>
-        <input id="dwInput" class="overlay-input" data-link="dwInput" inputmode="decimal">
-      </div>
-    </div>
-  </div>
-
-  <div class="subgrid">
-    <div class="card">
+  <!-- 図面・計算 -->
+  <div id="panel-main" class="panel active">
+    <div class="card accent-blue">
+      <div class="pill blue">最初にここ</div>
       <div class="section-title">金物選択</div>
       <div class="row-flex">
         <div class="field-lg">
@@ -466,36 +432,51 @@
           <select id="flushSelect"></select>
         </div>
       </div>
+      <div class="mini-note">金物を先に選ぶと、下の計算に自動反映されます。</div>
     </div>
 
-    <div class="card">
-      <div class="section-title">基準入力</div>
-      <div class="row-flex">
-        <div class="field-md">
-          <div class="label">上基準(C)</div>
-          <input id="topBase" inputmode="decimal">
+    <div class="subgrid">
+      <div class="card accent-purple">
+        <div class="pill purple">自動計算</div>
+        <div class="section-title">J の式</div>
+        <div class="formula-box">
+          <div class="formula-main">J = I + 15 - B - F - G</div>
+          <div class="formula-sub">J は図面入力から自動で算出されます。J入力欄は自動表示です。</div>
+          <div class="mini-note" id="jFormulaPreview">J = 0.0</div>
         </div>
-        <div class="field-md">
-          <div class="label">下基準</div>
-          <input id="bottomBase" inputmode="decimal">
-        </div>
-        <div class="field-md">
-          <div class="label">ストライク基準</div>
-          <input id="strikeBase" inputmode="decimal">
-        </div>
-        <div class="field-md">
-          <div class="label">枠板厚</div>
-          <input id="frameThickness" inputmode="decimal">
-        </div>
-        <div class="field-md">
-          <div class="label">丁番枚数</div>
-          <input id="hingeCount" inputmode="numeric">
+      </div>
+
+      <div class="card accent-green">
+        <div class="pill green">基準入力</div>
+        <div class="section-title">基準値</div>
+        <div class="row-flex">
+          <div class="field-md">
+            <div class="label">上基準(C)</div>
+            <input id="topBase" inputmode="decimal">
+          </div>
+          <div class="field-md">
+            <div class="label">下基準</div>
+            <input id="bottomBase" inputmode="decimal">
+          </div>
+          <div class="field-md">
+            <div class="label">ストライク基準</div>
+            <input id="strikeBase" inputmode="decimal">
+          </div>
+          <div class="field-md">
+            <div class="label">枠板厚</div>
+            <input id="frameThickness" inputmode="decimal">
+          </div>
+          <div class="field-md">
+            <div class="label">丁番枚数</div>
+            <input id="hingeCount" inputmode="numeric">
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="card">
-      <div class="section-title">現在値</div>
+    <div class="card accent-orange">
+      <div class="pill orange">現在選択中</div>
+      <div class="section-title">金物寸法</div>
       <div class="row-flex">
         <div class="field-md">
           <div class="label">丁番寸法</div>
@@ -519,51 +500,171 @@
         </div>
       </div>
     </div>
-  </div>
 
-  <div class="subgrid">
-    <div class="card">
-      <div class="section-title">丁番追加</div>
-      <div class="row-flex">
-        <div class="field-lg">
-          <div class="label">名前</div>
-          <input id="newHingeName">
-        </div>
-        <div class="field-md">
-          <div class="label">値</div>
-          <input id="newHingeValue" inputmode="decimal">
-        </div>
-        <div class="field-md">
-          <button type="button" id="addHingeBtn" class="btn-add">＋ 追加</button>
+    <div class="diagram-tabs">
+      <button type="button" class="tab-btn active" data-diagram-tab="vertical">縦図</button>
+      <button type="button" class="tab-btn" data-diagram-tab="horizontal">横図</button>
+    </div>
+
+    <div id="diagram-vertical" class="diagram-panel active card">
+      <div class="section-title">縦図入力</div>
+      <div class="small">A・B・I・J・G・F・E を図面上で入力します。J は自動計算です。</div>
+
+      <div class="diagram-stage">
+        <div class="diagram-canvas" id="verticalCanvas" data-base-width="593" data-base-height="1174" style="width:593px; height:1174px;">
+          <img src="vertical.png" alt="縦図" style="width:593px; height:1174px;">
+
+          <label class="overlay-label" data-for="topMituke">A 見付け</label>
+          <input id="topMituke" class="overlay-input" data-link="topMituke" inputmode="decimal">
+
+          <label class="overlay-label" data-for="topGap">B 上隙間</label>
+          <input id="topGap" class="overlay-input" data-link="topGap" inputmode="decimal">
+
+          <label class="overlay-label" data-for="diagramH">I H</label>
+          <input id="diagramH" class="overlay-input" data-link="diagramH" inputmode="decimal">
+
+          <label class="overlay-label" data-for="dh">J DH</label>
+          <input id="dh" class="overlay-input" data-link="dh" inputmode="decimal" readonly>
+
+          <label class="overlay-label" data-for="bottomGap">G 下隙間</label>
+          <input id="bottomGap" class="overlay-input" data-link="bottomGap" inputmode="decimal">
+
+          <label class="overlay-label" data-for="bottomSill2">F 沓摺②</label>
+          <input id="bottomSill2" class="overlay-input" data-link="bottomSill2" inputmode="decimal">
+
+          <label class="overlay-label" data-for="bottomSill1">E 沓摺①</label>
+          <input id="bottomSill1" class="overlay-input" data-link="bottomSill1" inputmode="decimal">
         </div>
       </div>
-      <div id="hingeMessage" class="message"></div>
+    </div>
+
+    <div id="diagram-horizontal" class="diagram-panel card">
+      <div class="section-title">横図入力</div>
+      <div class="small">S・T・U・DW を図面上で入力します。U は自動で S と同じです。</div>
+
+      <div class="diagram-stage">
+        <div class="diagram-canvas" id="horizontalCanvas" data-base-width="986" data-base-height="1174" style="width:986px; height:1174px;">
+          <img src="horizontal.png" alt="横図" style="width:986px; height:1174px;">
+
+          <label class="overlay-label" data-for="parentW">S 親W</label>
+          <input id="parentW" class="overlay-input" data-link="parentW" inputmode="decimal">
+
+          <label class="overlay-label" data-for="meetingInput">T 召合わせ</label>
+          <input id="meetingInput" class="overlay-input" data-link="meetingInput" inputmode="decimal">
+
+          <label class="overlay-label" data-for="flushMirror">U = S</label>
+          <input id="flushMirror" class="overlay-input" data-link="flushMirror" inputmode="decimal" readonly>
+
+          <label class="overlay-label" data-for="dwInput">N DW</label>
+          <input id="dwInput" class="overlay-input" data-link="dwInput" inputmode="decimal">
+        </div>
+      </div>
     </div>
 
     <div class="card">
-      <div class="section-title">ストライク追加</div>
+      <div class="section-title">計算結果</div>
+      <div id="resultText" class="result-box">※ 図面または入力欄に必要項目を入力してください</div>
+    </div>
+  </div>
+
+  <!-- 配置調整 -->
+  <div id="panel-layout" class="panel">
+    <div class="card accent-yellow">
+      <div class="pill orange">配置調整専用</div>
+      <div class="section-title">図面ボックス調整</div>
       <div class="row-flex">
         <div class="field-lg">
-          <div class="label">名前</div>
-          <input id="newStrikeName">
+          <button type="button" id="toggleLayoutEditBtn" class="btn-edit">配置調整モード: OFF</button>
         </div>
-        <div class="field-md">
-          <div class="label">下端</div>
-          <input id="newStrikeOffset" inputmode="decimal">
+        <div class="field-lg">
+          <button type="button" id="resetLayoutBtn" class="btn-delete">配置を初期化</button>
         </div>
-        <div class="field-md">
-          <div class="label">高さ</div>
-          <input id="newStrikeHeight" inputmode="decimal">
+        <div class="field-lg">
+          <button type="button" id="exportLayoutBtn" class="btn-warn">座標JSONを表示</button>
         </div>
-        <div class="field-md">
-          <div class="label">厚み</div>
-          <input id="newStrikeThickness" inputmode="decimal">
+        <div class="field-xl">
+          <div class="label">ラベル変更する項目</div>
+          <select id="layoutItemSelect"></select>
         </div>
-        <div class="field-md">
-          <button type="button" id="addStrikeBtn" class="btn-add">＋ 追加</button>
+        <div class="field-xl">
+          <div class="label">ラベル名</div>
+          <input id="layoutLabelName">
+        </div>
+        <div class="field-lg">
+          <button type="button" id="saveLabelBtn" class="btn-primary">ラベル名を保存</button>
         </div>
       </div>
-      <div id="strikeMessage" class="message"></div>
+      <div class="mini-note">配置調整モードをONにすると、図面上のボックスをドラッグで移動できます。</div>
+      <div id="layoutMessage" class="message"></div>
+      <div id="layoutExportWrap" style="display:none; margin-top:10px;">
+        <div class="label">現在の座標JSON</div>
+        <textarea id="layoutExportText" readonly></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- 金物管理 -->
+  <div id="panel-hardware" class="panel">
+    <div class="card accent-green">
+      <div class="pill green">バックアップ</div>
+      <div class="section-title">金物データの保存・復元</div>
+      <div class="row-flex">
+        <div class="field-lg">
+          <button type="button" id="backupExportBtn" class="btn-add">バックアップを書き出し</button>
+        </div>
+        <div class="field-lg">
+          <label class="label">バックアップ読込</label>
+          <input type="file" id="backupImportFile" accept=".json">
+        </div>
+      </div>
+      <div class="mini-note">キャッシュクリア前に JSON を保存しておくと、後で復元できます。</div>
+      <div id="backupMessage" class="message"></div>
+    </div>
+
+    <div class="subgrid">
+      <div class="card">
+        <div class="section-title">丁番追加</div>
+        <div class="row-flex">
+          <div class="field-lg">
+            <div class="label">名前</div>
+            <input id="newHingeName">
+          </div>
+          <div class="field-md">
+            <div class="label">値</div>
+            <input id="newHingeValue" inputmode="decimal">
+          </div>
+          <div class="field-md">
+            <button type="button" id="addHingeBtn" class="btn-add">＋ 追加</button>
+          </div>
+        </div>
+        <div id="hingeMessage" class="message"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">ストライク追加</div>
+        <div class="row-flex">
+          <div class="field-lg">
+            <div class="label">名前</div>
+            <input id="newStrikeName">
+          </div>
+          <div class="field-md">
+            <div class="label">下端</div>
+            <input id="newStrikeOffset" inputmode="decimal">
+          </div>
+          <div class="field-md">
+            <div class="label">高さ</div>
+            <input id="newStrikeHeight" inputmode="decimal">
+          </div>
+          <div class="field-md">
+            <div class="label">厚み</div>
+            <input id="newStrikeThickness" inputmode="decimal">
+          </div>
+          <div class="field-md">
+            <button type="button" id="addStrikeBtn" class="btn-add">＋ 追加</button>
+          </div>
+        </div>
+        <div id="strikeMessage" class="message"></div>
+      </div>
     </div>
 
     <div class="card">
@@ -583,64 +684,59 @@
       </div>
       <div id="flushMessage" class="message"></div>
     </div>
-  </div>
 
-  <div class="card">
-    <div class="section-title">金物管理</div>
+    <div class="card">
+      <div class="section-title">金物管理</div>
 
-    <details class="manage-section" open>
-      <summary><span id="hingeSummaryText">丁番一覧（0件）</span></summary>
-      <div class="manage-section-body"><div id="hingeList" class="manage-list"></div></div>
-    </details>
+      <details class="manage-section" open>
+        <summary><span id="hingeSummaryText">丁番一覧（0件）</span></summary>
+        <div class="manage-section-body"><div id="hingeList" class="manage-list"></div></div>
+      </details>
 
-    <details class="manage-section">
-      <summary><span id="strikeSummaryText">ストライク一覧（0件）</span></summary>
-      <div class="manage-section-body"><div id="strikeList" class="manage-list"></div></div>
-    </details>
+      <details class="manage-section">
+        <summary><span id="strikeSummaryText">ストライク一覧（0件）</span></summary>
+        <div class="manage-section-body"><div id="strikeList" class="manage-list"></div></div>
+      </details>
 
-    <details class="manage-section">
-      <summary><span id="flushSummaryText">フランス落とし一覧（0件）</span></summary>
-      <div class="manage-section-body"><div id="flushList" class="manage-list"></div></div>
-    </details>
+      <details class="manage-section">
+        <summary><span id="flushSummaryText">フランス落とし一覧（0件）</span></summary>
+        <div class="manage-section-body"><div id="flushList" class="manage-list"></div></div>
+      </details>
 
-    <div class="card" style="margin-top:10px;">
-      <div class="section-title">編集フォーム</div>
-      <div class="small">ストライクの値2は「高さ,厚み」の形で入力します。例: 110,2.5</div>
-      <div class="row-flex">
-        <div class="field-md">
-          <div class="label">種類</div>
-          <select id="manageType">
-            <option value="hinge">丁番</option>
-            <option value="strike">ストライク</option>
-            <option value="flush">フランス落とし</option>
-          </select>
+      <div class="card" style="margin-top:10px;">
+        <div class="section-title">編集フォーム</div>
+        <div class="small">ストライクの値2は「高さ,厚み」の形。例: 110,2.5</div>
+        <div class="row-flex">
+          <div class="field-md">
+            <div class="label">種類</div>
+            <select id="manageType">
+              <option value="hinge">丁番</option>
+              <option value="strike">ストライク</option>
+              <option value="flush">フランス落とし</option>
+            </select>
+          </div>
+          <div class="field-lg">
+            <div class="label">名前</div>
+            <input id="manageName">
+          </div>
+          <div class="field-md">
+            <div class="label">値1</div>
+            <input id="manageValue1" inputmode="decimal">
+          </div>
+          <div class="field-md">
+            <div class="label">値2</div>
+            <input id="manageValue2">
+          </div>
+          <div class="field-md">
+            <button type="button" id="manageSaveBtn" class="btn-edit">更新</button>
+          </div>
+          <div class="field-md">
+            <button type="button" id="manageCancelBtn" class="btn-delete">解除</button>
+          </div>
         </div>
-        <div class="field-lg">
-          <div class="label">名前</div>
-          <input id="manageName">
-        </div>
-        <div class="field-md">
-          <div class="label">値1</div>
-          <input id="manageValue1" inputmode="decimal">
-        </div>
-        <div class="field-md">
-          <div class="label">値2</div>
-          <input id="manageValue2">
-        </div>
-        <div class="field-md">
-          <button type="button" id="manageSaveBtn" class="btn-edit">更新</button>
-        </div>
-        <div class="field-md">
-          <button type="button" id="manageCancelBtn" class="btn-delete">解除</button>
-        </div>
+        <div id="manageMessage" class="message"></div>
       </div>
-      <div id="manageMessage" class="message"></div>
     </div>
-  </div>
-
-  <div class="card">
-    <div class="section-title">計算結果</div>
-    <div id="resultText" class="result-box">※ 図面または入力欄に必要項目を入力してください</div>
   </div>
 
 </div>
