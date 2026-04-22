@@ -1,0 +1,18 @@
+{
+  "hinges": [
+    {"name":"DH-508S（3+12）","value":15,"isDefault":true},
+    {"name":"401-SL501（1+13）","value":14,"isDefault":true},
+    {"name":"SS-502","value":12,"isDefault":false}
+  ],
+  "strikes": [
+    {"name":"LA","offset":22.5,"height":110,"thickness":2.5,"isDefault":true},
+    {"name":"LX","offset":15.5,"height":96,"thickness":2.4,"isDefault":false},
+    {"name":"HD","offset":76,"height":96,"thickness":2,"isDefault":false},
+    {"name":"LY","offset":18.5,"height":70,"thickness":1.9,"isDefault":false}
+  ],
+  "flushes": [
+    {"name":"DE6VN","value":18.5,"isDefault":true},
+    {"name":"DC800","value":20.5,"isDefault":true}
+  ],
+  "updatedAt": "2026-04-20T11:25:01.944Z"
+}
